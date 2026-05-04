@@ -29,6 +29,18 @@
     @keyframes waveBar  { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1.3)} }
     @keyframes hintIn   { from{transform:translate(-50%,-12px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
     @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.5} }
+    
+    /* 🌟 新增：對話泡泡彈出動畫 */
+    @keyframes popInLeft {
+      0% { transform: translateX(-20px) scale(0.8); opacity: 0; }
+      70% { transform: translateX(5px) scale(1.05); opacity: 1; }
+      100% { transform: translateX(0) scale(1); opacity: 1; }
+    }
+    @keyframes popInRight {
+      0% { transform: translateX(20px) scale(0.8); opacity: 0; }
+      70% { transform: translateX(-5px) scale(1.05); opacity: 1; }
+      100% { transform: translateX(0) scale(1); opacity: 1; }
+    }
 
     .bob      { animation: bob 2s ease-in-out infinite; }
     .star-pop { animation: starPop .5s cubic-bezier(.175,.885,.32,1.275) forwards; }
@@ -103,7 +115,6 @@
       transform:translateY(5px);
     }
 
-    /* 練習步驟指示 */
     .step-dot {
       width:10px; height:10px; border-radius:50%;
       transition:all .3s;
@@ -119,152 +130,152 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
 /* ═══════════════════════════════════════════════
-   題庫
+   題庫與情境小劇場設計
 ═══════════════════════════════════════════════ */
 const ALL_DATA = {
   "1-1":{ title:"小一上", sentences:[
-    {week:"1-2",  en:"Hello! / Hi!",         zh:"哈囉！ / 嗨！",   icon:"👋"},
-    {week:"3-4",  en:"Good morning.",         zh:"早安",             icon:"☀️"},
-    {week:"5-6",  en:"Good afternoon.",       zh:"午安",             icon:"🌤️"},
-    {week:"7-8",  en:"Look.",                 zh:"你看",             icon:"👀"},
-    {week:"9-10", en:"Line up, please.",      zh:"請排隊",           icon:"🧑‍🤝‍🧑"},
-    {week:"11-12",en:"Stand up.",             zh:"起立",             icon:"🧍"},
-    {week:"13-14",en:"Sit down.",             zh:"坐下",             icon:"🪑"},
-    {week:"15-16",en:"Are you ready?",        zh:"準備好了嗎？",    icon:"👍"},
-    {week:"17-18",en:"Watch out!",            zh:"小心！",           icon:"⚠️"},
-    {week:"19-20",en:"Goodbye. / See you.",   zh:"再見",             icon:"👋"},
+    {week:"1-2",  en:"Hello! / Hi!",         zh:"哈囉！ / 嗨！",    icon:"👋", scene:"在路上遇到好朋友時", dialog:[{role:"👦", text:"Hello!"}, {role:"👧", text:"Hi!"}]},
+    {week:"3-4",  en:"Good morning.",        zh:"早安",            icon:"☀️", scene:"早上來到學校看到老師", dialog:[{role:"👦", text:"Good morning, teacher."}, {role:"👩", text:"Good morning."}]},
+    {week:"5-6",  en:"Good afternoon.",      zh:"午安",            icon:"🌤️", scene:"中午吃飽飯後遇到同學", dialog:[{role:"👦", text:"Good afternoon."}, {role:"👧", text:"Good afternoon."}]},
+    {week:"7-8",  en:"Look.",                zh:"你看",            icon:"👀", scene:"看到天空有漂亮的彩虹", dialog:[{role:"👦", text:"Look! 有彩虹！"}, {role:"👧", text:"哇，好漂亮！"}]},
+    {week:"9-10", en:"Line up, please.",     zh:"請排隊",          icon:"🧑‍🤝‍🧑", scene:"準備去上體育課時", dialog:[{role:"👩", text:"Line up, please."}, {role:"👦", text:"好～大家快來排隊！"}]},
+    {week:"11-12",en:"Stand up.",            zh:"起立",            icon:"🧍", scene:"上課鐘聲響了", dialog:[{role:"👦", text:"Stand up."}, {role:"👧", text:"(安靜站起來)"}]},
+    {week:"13-14",en:"Sit down.",            zh:"坐下",            icon:"🪑", scene:"老師請大家坐好", dialog:[{role:"👩", text:"大家早安，Sit down."}, {role:"👦", text:"謝謝老師。"}]},
+    {week:"15-16",en:"Are you ready?",       zh:"準備好了嗎？",    icon:"👍", scene:"玩遊戲前確認", dialog:[{role:"👦", text:"Are you ready?"}, {role:"👧", text:"Yes! 準備好了！"}]},
+    {week:"17-18",en:"Watch out!",           zh:"小心！",          icon:"⚠️", scene:"同學快撞到桌子了", dialog:[{role:"👦", text:"Watch out!"}, {role:"👧", text:"呼～謝謝你提醒我！"}]},
+    {week:"19-20",en:"Goodbye. / See you.",  zh:"再見",            icon:"👋", scene:"放學回家時", dialog:[{role:"👦", text:"Goodbye!"}, {role:"👧", text:"See you."}]},
   ]},
   "1-2":{ title:"小一下", sentences:[
-    {week:"1-2",  en:"Thank you!",            zh:"謝謝！",           icon:"🙏"},
-    {week:"3-4",  en:"You're welcome.",       zh:"不客氣",           icon:"😊"},
-    {week:"5-6",  en:"Come here.",            zh:"過來這裡",         icon:"🙋"},
-    {week:"7-8",  en:"Stop!",                 zh:"停",               icon:"🛑"},
-    {week:"9-10", en:"Raise your hand.",      zh:"舉手",             icon:"✋"},
-    {week:"11-12",en:"Put down your hand.",   zh:"手放下",           icon:"👇"},
-    {week:"13-14",en:"I'm sorry.",            zh:"對不起",           icon:"🥺"},
-    {week:"15-16",en:"It's OK.",              zh:"沒關係",           icon:"👌"},
-    {week:"17-18",en:"Good job.",             zh:"做得好",           icon:"🌟"},
-    {week:"19-20",en:"Try again.",            zh:"再試一次",         icon:"💪"},
+    {week:"1-2",  en:"Thank you!",           zh:"謝謝！",          icon:"🙏", scene:"收到同學分享的糖果", dialog:[{role:"👦", text:"給你一顆糖果。"}, {role:"👧", text:"Thank you!"}]},
+    {week:"3-4",  en:"You're welcome.",      zh:"不客氣",          icon:"😊", scene:"別人跟你說謝謝時", dialog:[{role:"👧", text:"謝謝你的幫忙。"}, {role:"👦", text:"You're welcome."}]},
+    {week:"5-6",  en:"Come here.",           zh:"過來這裡",        icon:"🙋", scene:"發現好玩的蟲蟲想叫同學看", dialog:[{role:"👦", text:"Come here! 快來看！"}, {role:"👧", text:"什麼東西呀？"}]},
+    {week:"7-8",  en:"Stop!",                zh:"停",              icon:"🛑", scene:"同學在走廊奔跑", dialog:[{role:"👩", text:"Stop! 走廊不要跑步喔。"}, {role:"👦", text:"對不起。"}]},
+    {week:"9-10", en:"Raise your hand.",     zh:"舉手",            icon:"✋", scene:"上課想發言前", dialog:[{role:"👩", text:"想回答的請舉手，Raise your hand."}, {role:"👦", text:"(趕快把手舉高)"}]},
+    {week:"11-12",en:"Put down your hand.",  zh:"手放下",          icon:"👇", scene:"老師點完同學後", dialog:[{role:"👩", text:"好，請小明回答。其他人 Put down your hand."}]},
+    {week:"13-14",en:"I'm sorry.",           zh:"對不起",          icon:"🥺", scene:"不小心撞到同學", dialog:[{role:"👦", text:"I'm sorry."}, {role:"👧", text:"沒關係。"}]},
+    {week:"15-16",en:"It's OK.",             zh:"沒關係",          icon:"👌", scene:"原諒不小心犯錯的同學", dialog:[{role:"👦", text:"對不起，弄壞你的勞作了。"}, {role:"👧", text:"It's OK."}]},
+    {week:"17-18",en:"Good job.",            zh:"做得好",          icon:"🌟", scene:"同學畫了一張很棒的圖", dialog:[{role:"👩", text:"這隻恐龍畫得很棒喔！Good job."}, {role:"👦", text:"謝謝老師！"}]},
+    {week:"19-20",en:"Try again.",           zh:"再試一次",        icon:"💪", scene:"同學投籃沒投進", dialog:[{role:"👦", text:"哎呀，沒投中..."}, {role:"👧", text:"加油！Try again."}]},
   ]},
   "2-1":{ title:"小二上", sentences:[
-    {week:"1-2",  en:"How are you?",          zh:"你好嗎？",         icon:"😃"},
-    {week:"3-4",  en:"What's your name?",     zh:"你叫什麼名字？",  icon:"📛"},
-    {week:"5-6",  en:"Happy birthday!",       zh:"生日快樂！",       icon:"🎂"},
-    {week:"7-8",  en:"How old are you?\nI'm eight years old.", zh:"你幾歲？\n我八歲。", icon:"8️⃣"},
-    {week:"9-10", en:"Happy Halloween!",      zh:"萬聖節快樂！",     icon:"🎃"},
-    {week:"11-12",en:"Let's go trick-or-treating.", zh:"不給糖就搗蛋", icon:"🍬"},
-    {week:"13-14",en:"What's this / that?",   zh:"這/那是甚麼？",   icon:"❓"},
-    {week:"15-16",en:"It's an eraser.",       zh:"這是一塊橡皮擦。",icon:"✏️"},
-    {week:"17-18",en:"What color is it?",     zh:"它是什麼顏色？",  icon:"🎨"},
-    {week:"19-20",en:"It's green.",           zh:"它是綠色。",       icon:"🟩"},
+    {week:"1-2",  en:"How are you?",         zh:"你好嗎？",        icon:"😃", scene:"遇到好久不見的同學", dialog:[{role:"👦", text:"How are you?"}, {role:"👧", text:"I am fine."}]},
+    {week:"3-4",  en:"What's your name?",    zh:"你叫什麼名字？",  icon:"📛", scene:"認識新朋友時", dialog:[{role:"👦", text:"What's your name?"}, {role:"👧", text:"I am Amy."}]},
+    {week:"5-6",  en:"Happy birthday!",      zh:"生日快樂！",      icon:"🎂", scene:"參加同學的生日派對", dialog:[{role:"👦", text:"送你禮物，Happy birthday!"}, {role:"👧", text:"哇！謝謝你！"}]},
+    {week:"7-8",  en:"How old are you?\nI'm eight years old.", zh:"你幾歲？\n我八歲。", icon:"8️⃣", scene:"互相詢問年紀", dialog:[{role:"👦", text:"How old are you?"}, {role:"👧", text:"I'm eight years old."}]},
+    {week:"9-10", en:"Happy Halloween!",     zh:"萬聖節快樂！",    icon:"🎃", scene:"萬聖節裝扮活動", dialog:[{role:"👦", text:"Happy Halloween!"}, {role:"👧", text:"哇！你扮成吸血鬼！"}]},
+    {week:"11-12",en:"Let's go trick-or-treating.", zh:"不給糖就搗蛋", icon:"🍬", scene:"萬聖節去討糖果", dialog:[{role:"👦", text:"Let's go trick-or-treating."}, {role:"👧", text:"好耶！出發！"}]},
+    {week:"13-14",en:"What's this / that?",  zh:"這/那是甚麼？",   icon:"❓", scene:"看到不認識的東西", dialog:[{role:"👦", text:"What's this?"}, {role:"👧", text:"這是一本故事書。"}]},
+    {week:"15-16",en:"It's an eraser.",      zh:"這是一塊橡皮擦。",icon:"✏️", scene:"同學借文具", dialog:[{role:"👦", text:"What's that?"}, {role:"👧", text:"It's an eraser."}]},
+    {week:"17-18",en:"What color is it?",    zh:"它是什麼顏色？",  icon:"🎨", scene:"畫畫時找彩色筆", dialog:[{role:"👦", text:"我的筆掉下去了，What color is it?"}, {role:"👧", text:"它是紅色的。"}]},
+    {week:"19-20",en:"It's green.",          zh:"它是綠色。",      icon:"🟩", scene:"看到一片特別的樹葉", dialog:[{role:"👦", text:"What color is it?"}, {role:"👧", text:"It's green."}]},
   ]},
   "2-2":{ title:"小二下", sentences:[
-    {week:"1-2",  en:"Try again.",            zh:"再試一次。",       icon:"💪"},
-    {week:"3-4",  en:"Louder, please.",       zh:"請大聲一點。",     icon:"📢"},
-    {week:"5-6",  en:"Let me see it.",        zh:"讓我看看。",       icon:"👀"},
-    {week:"7-8",  en:"That's right.",         zh:"沒錯。",           icon:"✅"},
-    {week:"9-10", en:"Happy Mother's Day.",   zh:"母親節快樂。",     icon:"💐"},
-    {week:"11-12",en:"This is for you.",      zh:"這是給你的。",     icon:"🎁"},
-    {week:"13-14",en:"Is it a rabbit?",       zh:"它是一隻兔子嗎？",icon:"🐇"},
-    {week:"15-16",en:"No, it isn't.",         zh:"不，它不是。",     icon:"🙅"},
-    {week:"17-18",en:"How about you?",        zh:"那你呢？",         icon:"🫵"},
-    {week:"19-20",en:"Me, too.",              zh:"我也是。",         icon:"🙋"},
+    {week:"1-2",  en:"Try again.",           zh:"再試一次。",      icon:"💪", scene:"同學疊積木倒了", dialog:[{role:"👦", text:"啊...積木倒了..."}, {role:"👧", text:"沒關係，Try again."}]},
+    {week:"3-4",  en:"Louder, please.",      zh:"請大聲一點。",    icon:"📢", scene:"上課發表聲音太小", dialog:[{role:"👩", text:"Louder, please."}, {role:"👦", text:"(大聲) 我覺得答案是A！"}]},
+    {week:"5-6",  en:"Let me see it.",       zh:"讓我看看。",      icon:"👀", scene:"同學帶了新玩具", dialog:[{role:"👦", text:"Let me see it."}, {role:"👧", text:"給你看，很酷吧！"}]},
+    {week:"7-8",  en:"That's right.",        zh:"沒錯。",          icon:"✅", scene:"同學答對數學問題了", dialog:[{role:"👩", text:"3加2等於多少？"}, {role:"👦", text:"5！"}, {role:"👩", text:"That's right."}]},
+    {week:"9-10", en:"Happy Mother's Day.",  zh:"母親節快樂。",    icon:"💐", scene:"母親節送卡片給媽媽", dialog:[{role:"👦", text:"媽媽，Happy Mother's Day."}, {role:"👩", text:"謝謝寶貝！"}]},
+    {week:"11-12",en:"This is for you.",     zh:"這是給你的。",    icon:"🎁", scene:"送小禮物給好朋友", dialog:[{role:"👦", text:"This is for you."}, {role:"👧", text:"哇！謝謝你！"}]},
+    {week:"13-14",en:"Is it a rabbit?",      zh:"它是一隻兔子嗎？",icon:"🐇", scene:"玩動物猜謎遊戲", dialog:[{role:"👦", text:"有長長耳朵、愛吃紅蘿蔔的..."}, {role:"👧", text:"Is it a rabbit?"}]},
+    {week:"15-16",en:"No, it isn't.",        zh:"不，它不是。",    icon:"🙅", scene:"猜錯動物了", dialog:[{role:"👧", text:"Is it a dog?"}, {role:"👦", text:"No, it isn't."}]},
+    {week:"17-18",en:"How about you?",       zh:"那你呢？",        icon:"🫵", scene:"分享完自己喜歡的水果", dialog:[{role:"👦", text:"我喜歡吃蘋果，How about you?"}, {role:"👧", text:"我喜歡香蕉！"}]},
+    {week:"19-20",en:"Me, too.",             zh:"我也是。",        icon:"🙋", scene:"發現兩個人喜歡一樣的東西", dialog:[{role:"👧", text:"我好喜歡吃冰淇淋。"}, {role:"👦", text:"Me, too."}]},
   ]},
   "3-1":{ title:"小三上", sentences:[
-    {week:"1-2",  en:"Are you OK?",           zh:"你還好嗎？",       icon:"🤕"},
-    {week:"3-4",  en:"Nice to meet you.",     zh:"很高興見到你。",  icon:"🤝"},
-    {week:"5-6",  en:"I don't know.",         zh:"我不知道。",       icon:"🤷"},
-    {week:"7-8",  en:"Can you swim?",         zh:"你會游泳嗎？",     icon:"🏊"},
-    {week:"9-10", en:"Help!",                 zh:"救命啊！",         icon:"🆘"},
-    {week:"11-12",en:"Of course.",            zh:"當然。",           icon:"💯"},
-    {week:"13-14",en:"Yummy!\nYuck!",         zh:"好吃！\n不好吃！",icon:"😋"},
-    {week:"15-16",en:"Hurry up!",             zh:"快一點！",         icon:"🏃"},
-    {week:"17-18",en:"Here you are.",         zh:"這個給你。",       icon:"🤲"},
-    {week:"19-20",en:"Happy Moon Festival.",  zh:"中秋節快樂！",     icon:"🌕"},
+    {week:"1-2",  en:"Are you OK?",          zh:"你還好嗎？",      icon:"🤕", scene:"同學不小心跌倒了", dialog:[{role:"👦", text:"Are you OK?"}, {role:"👧", text:"有點痛，但我沒事。"}]},
+    {week:"3-4",  en:"Nice to meet you.",    zh:"很高興見到你。",  icon:"🤝", scene:"認識新轉學生", dialog:[{role:"👦", text:"你好，我是小明。"}, {role:"👧", text:"Nice to meet you."}]},
+    {week:"5-6",  en:"I don't know.",        zh:"我不知道。",      icon:"🤷", scene:"同學問你一個很難的問題", dialog:[{role:"👦", text:"你知道這題數學怎麼算嗎？"}, {role:"👧", text:"I don't know."}]},
+    {week:"7-8",  en:"Can you swim?",        zh:"你會游泳嗎？",    icon:"🏊", scene:"夏天一起去游泳池前", dialog:[{role:"👦", text:"Can you swim?"}, {role:"👧", text:"可以呀，我很會游！"}]},
+    {week:"9-10", en:"Help!",                zh:"救命啊！",        icon:"🆘", scene:"遇到困難需要別人幫忙", dialog:[{role:"👦", text:"Help! 我的氣球飛到樹上了！"}, {role:"👨", text:"叔叔幫你拿下來。"}]},
+    {week:"11-12",en:"Of course.",           zh:"當然。",          icon:"💯", scene:"同學問能不能借用橡皮擦", dialog:[{role:"👧", text:"我可以借一下你的橡皮擦嗎？"}, {role:"👦", text:"Of course."}]},
+    {week:"13-14",en:"Yummy!\nYuck!",        zh:"好吃！\n不好吃！",icon:"😋", scene:"吃到美味或不喜歡的食物", dialog:[{role:"👦", text:"這個草莓蛋糕 Yummy!"}, {role:"👧", text:"這個青椒 Yuck!"}]},
+    {week:"15-16",en:"Hurry up!",            zh:"快一點！",        icon:"🏃", scene:"快要遲到了", dialog:[{role:"👩", text:"Hurry up! 校車要開了！"}, {role:"👦", text:"來了來了！"}]},
+    {week:"17-18",en:"Here you are.",        zh:"這個給你。",      icon:"🤲", scene:"把東西遞給別人時", dialog:[{role:"👧", text:"請借我一隻紅筆。"}, {role:"👦", text:"Here you are."}]},
+    {week:"19-20",en:"Happy Moon Festival.", zh:"中秋節快樂！",    icon:"🌕", scene:"中秋節吃柚子賞月", dialog:[{role:"👦", text:"Happy Moon Festival."}, {role:"👧", text:"我們一起吃月餅吧！"}]},
   ]},
   "3-2":{ title:"小三下", sentences:[
-    {week:"1-2",  en:"Time for lunch.",       zh:"午餐時間到囉",     icon:"🍱"},
-    {week:"3-4",  en:"Hooray!",               zh:"太棒了！",         icon:"🎉"},
-    {week:"5-6",  en:"Take a rest.",          zh:"休息一下",         icon:"🛋️"},
-    {week:"7-8",  en:"Come and join us.",     zh:"加入我們吧",       icon:"🤝"},
-    {week:"9-10", en:"Wake up!",              zh:"醒來！",           icon:"⏰"},
-    {week:"11-12",en:"Wait.",                 zh:"等一下",           icon:"✋"},
-    {week:"13-14",en:"It's here.",            zh:"它在這裡",         icon:"📍"},
-    {week:"15-16",en:"It's over there.",      zh:"它在那裡",         icon:"👉"},
-    {week:"17-18",en:"I'm ready.",            zh:"我準備好了",       icon:"🚀"},
-    {week:"19-20",en:"Happy Easter.",         zh:"復活節快樂",       icon:"🐰"},
+    {week:"1-2",  en:"Time for lunch.",      zh:"午餐時間到囉",    icon:"🍱", scene:"第四節下課鐘聲響起", dialog:[{role:"👩", text:"Time for lunch."}, {role:"👦", text:"耶！吃飯了！"}]},
+    {week:"3-4",  en:"Hooray!",              zh:"太棒了！",        icon:"🎉", scene:"聽到明天要去戶外教學", dialog:[{role:"👦", text:"明天要去動物園！"}, {role:"👧", text:"Hooray!"}]},
+    {week:"5-6",  en:"Take a rest.",         zh:"休息一下",        icon:"🛋️", scene:"體育課跑完步好累", dialog:[{role:"👩", text:"大家 Take a rest."}, {role:"👦", text:"呼～終於可以喝水了。"}]},
+    {week:"7-8",  en:"Come and join us.",    zh:"加入我們吧",      icon:"🤝", scene:"下課邀請同學一起玩鬼抓人", dialog:[{role:"👦", text:"我們在玩遊戲，Come and join us."}, {role:"👧", text:"好啊！"}]},
+    {week:"9-10", en:"Wake up!",             zh:"醒來！",          icon:"⏰", scene:"早上媽媽叫你起床", dialog:[{role:"👩", text:"Wake up! 上學要遲到囉！"}, {role:"👦", text:"讓我再睡五分鐘..."}]},
+    {week:"11-12",en:"Wait.",                zh:"等一下",          icon:"✋", scene:"同學走太快了", dialog:[{role:"👦", text:"等等我！Wait."}, {role:"👧", text:"好，你快點跟上。"}]},
+    {week:"13-14",en:"It's here.",           zh:"它在這裡",        icon:"📍", scene:"幫忙找到遺失的鉛筆", dialog:[{role:"👧", text:"我的筆呢？"}, {role:"👦", text:"It's here. 掉在桌子底下了。"}]},
+    {week:"15-16",en:"It's over there.",     zh:"它在那裡",        icon:"👉", scene:"指引廁所的方向", dialog:[{role:"👦", text:"請問圖書館在哪裡？"}, {role:"👧", text:"It's over there. 在那邊。"}]},
+    {week:"17-18",en:"I'm ready.",           zh:"我準備好了",      icon:"🚀", scene:"準備好要出門上學了", dialog:[{role:"👩", text:"書包整理好了嗎？"}, {role:"👦", text:"I'm ready."}]},
+    {week:"19-20",en:"Happy Easter.",        zh:"復活節快樂",      icon:"🐰", scene:"復活節找彩蛋活動", dialog:[{role:"👦", text:"Happy Easter."}, {role:"👧", text:"看我找到的漂亮彩蛋！"}]},
   ]},
   "4-1":{ title:"小四上", sentences:[
-    {week:"1-2",  en:"I'm under the weather.",      zh:"我身體不舒服",     icon:"🤒"},
-    {week:"3-4",  en:"Have a good time.",           zh:"祝你玩得開心",     icon:"🥳"},
-    {week:"5-6",  en:"Follow me, please.",          zh:"請跟我來",         icon:"🚶"},
-    {week:"7-8",  en:"Hold your horses.",           zh:"別著急",           icon:"🐴"},
-    {week:"9-10", en:"Can you give me a hand?",     zh:"可以請你幫忙嗎？", icon:"🤝"},
-    {week:"11-12",en:"What's the matter?",          zh:"怎麼了？",         icon:"🤔"},
-    {week:"13-14",en:"Please calm down.",           zh:"請冷靜",           icon:"🧘"},
-    {week:"15-16",en:"Take care!",                  zh:"保重",             icon:"❤️"},
-    {week:"17-18",en:"Christmas is coming.",        zh:"聖誕節快到了",     icon:"🎄"},
-    {week:"19-20",en:"Wish you all the best.",      zh:"祝您一切順利",     icon:"🍀"},
+    {week:"1-2",  en:"I'm under the weather.",       zh:"我身體不舒服",      icon:"🤒", scene:"覺得頭暈不舒服", dialog:[{role:"👩", text:"你怎麼沒精神？"}, {role:"👦", text:"I'm under the weather."}]},
+    {week:"3-4",  en:"Have a good time.",            zh:"祝你玩得開心",      icon:"🥳", scene:"同學週末要去遊樂園", dialog:[{role:"👦", text:"我明天要去迪士尼！"}, {role:"👧", text:"哇！Have a good time."}]},
+    {week:"5-6",  en:"Follow me, please.",           zh:"請跟我來",          icon:"🚶", scene:"帶領客人去辦公室", dialog:[{role:"👦", text:"請問老師辦公室在哪？"}, {role:"👧", text:"Follow me, please."}]},
+    {week:"7-8",  en:"Hold your horses.",            zh:"別著急",            icon:"🐴", scene:"同學急著衝出教室", dialog:[{role:"👩", text:"Hold your horses. 還沒下課喔！"}, {role:"👦", text:"啊，抱歉！"}]},
+    {week:"9-10", en:"Can you give me a hand?",      zh:"可以請你幫忙嗎？", icon:"🤝", scene:"搬不動很重的作業本", dialog:[{role:"👧", text:"好重喔... Can you give me a hand?"}, {role:"👦", text:"沒問題，我來幫妳！"}]},
+    {week:"11-12",en:"What's the matter?",           zh:"怎麼了？",          icon:"🤔", scene:"看到同學在哭", dialog:[{role:"👦", text:"What's the matter?"}, {role:"👧", text:"我的水壺不見了..."}]},
+    {week:"13-14",en:"Please calm down.",            zh:"請冷靜",            icon:"🧘", scene:"同學因為遊戲輸了很生氣", dialog:[{role:"👦", text:"太可惡了！怎麼會輸！"}, {role:"👧", text:"Please calm down. 只是遊戲嘛。"}]},
+    {week:"15-16",en:"Take care!",                   zh:"保重",              icon:"❤️", scene:"同學生病請假回家", dialog:[{role:"👦", text:"我發燒了，要回家休息。"}, {role:"👧", text:"Take care!"}]},
+    {week:"17-18",en:"Christmas is coming.",         zh:"聖誕節快到了",      icon:"🎄", scene:"看到街上開始裝飾聖誕樹", dialog:[{role:"👦", text:"哇！好多燈泡。"}, {role:"👧", text:"對呀，Christmas is coming."}]},
+    {week:"19-20",en:"Wish you all the best.",       zh:"祝您一切順利",      icon:"🍀", scene:"朋友要轉學到其他學校了", dialog:[{role:"👦", text:"我明天就要轉學了。"}, {role:"👧", text:"Wish you all the best."}]},
   ]},
   "4-2":{ title:"小四下", sentences:[
-    {week:"1-2",  en:"I have Monday blues.",        zh:"我有星期一症候群", icon:"😩"},
-    {week:"3-4",  en:"Say cheese!",                 zh:"笑一個",           icon:"📸"},
-    {week:"5-6",  en:"Don't go bananas.",           zh:"別抓狂",           icon:"🍌"},
-    {week:"7-8",  en:"It's a piece of cake.",       zh:"小事一樁",         icon:"🍰"},
-    {week:"9-10", en:"Face the music.",             zh:"面對現實",         icon:"🎸"},
-    {week:"11-12",en:"What a pity!",                zh:"真可惜",           icon:"🥺"},
-    {week:"13-14",en:"Keep in touch.",              zh:"保持聯絡",         icon:"📱"},
-    {week:"15-16",en:"Is it yours?",                zh:"這是你的嗎？",     icon:"❓"},
-    {week:"17-18",en:"It's amazing.",               zh:"這太令人驚奇了",   icon:"🤩"},
-    {week:"19-20",en:"Don't be a couch potato.",    zh:"不要當電視迷",     icon:"🥔"},
+    {week:"1-2",  en:"I have Monday blues.",         zh:"我有星期一症候群", icon:"😩", scene:"星期一早上不想起床上學", dialog:[{role:"👩", text:"快起床上學囉！"}, {role:"👦", text:"I have Monday blues..."}]},
+    {week:"3-4",  en:"Say cheese!",                  zh:"笑一個",            icon:"📸", scene:"大家一起拍大合照", dialog:[{role:"👨", text:"看鏡頭喔～ Say cheese!"}, {role:"👦👧", text:"Cheese~ ✌️"}]},
+    {week:"5-6",  en:"Don't go bananas.",            zh:"別抓狂",            icon:"🍌", scene:"同學氣到快發瘋了", dialog:[{role:"👦", text:"我的冰淇淋掉到地上了！啊！"}, {role:"👧", text:"Don't go bananas. 我分你一口。"}]},
+    {week:"7-8",  en:"It's a piece of cake.",        zh:"小事一樁",          icon:"🍰", scene:"考試覺得題目很簡單", dialog:[{role:"👦", text:"這題數學你會算嗎？"}, {role:"👧", text:"It's a piece of cake."}]},
+    {week:"9-10", en:"Face the music.",              zh:"面對現實",          icon:"🎸", scene:"做錯事被發現了", dialog:[{role:"👦", text:"打破花瓶了怎麼辦？"}, {role:"👧", text:"只能去跟媽媽說了，Face the music."}]},
+    {week:"11-12",en:"What a pity!",                 zh:"真可惜",            icon:"🥺", scene:"因為下雨取消校外教學", dialog:[{role:"👦", text:"今天不能去動物園了。"}, {role:"👧", text:"What a pity!"}]},
+    {week:"13-14",en:"Keep in touch.",               zh:"保持聯絡",          icon:"📱", scene:"和夏令營認識的朋友告別", dialog:[{role:"👦", text:"營隊結束了，再見！"}, {role:"👧", text:"Keep in touch. 要傳訊息給我喔！"}]},
+    {week:"15-16",en:"Is it yours?",                 zh:"這是你的嗎？",      icon:"❓", scene:"撿到一個漂亮的橡皮擦", dialog:[{role:"👦", text:"這個橡皮擦 Is it yours?"}, {role:"👧", text:"對！謝謝你幫我找到。"}]},
+    {week:"17-18",en:"It's amazing.",                zh:"這太令人驚奇了",    icon:"🤩", scene:"看到很精彩的魔術表演", dialog:[{role:"👦", text:"你看那個魔術師把鴿子變出來了！"}, {role:"👧", text:"It's amazing."}]},
+    {week:"19-20",en:"Don't be a couch potato.",     zh:"不要當電視迷",      icon:"🥔", scene:"假日一直躺在沙發上看電視", dialog:[{role:"👩", text:"Don't be a couch potato. 出去運動吧！"}, {role:"👦", text:"好啦～"}]},
   ]},
   "5-1":{ title:"小五上", sentences:[
-    {week:"1-2",  en:"Where are you from?",         zh:"你來自哪裡？",     icon:"🌍"},
-    {week:"3-4",  en:"Excuse me.",                 zh:"不好意思",         icon:"🙇"},
-    {week:"5-6",  en:"Can you help me?",           zh:"你能幫幫我嗎？",   icon:"🤝"},
-    {week:"7-8",  en:"Amazing!",                   zh:"了不起！",         icon:"🤯"},
-    {week:"9-10", en:"Follow me!",                 zh:"跟我來！",         icon:"👣"},
-    {week:"11-12",en:"Well done.",                 zh:"做得好",           icon:"👏"},
-    {week:"13-14",en:"Really?",                    zh:"真的嗎？",         icon:"🤨"},
-    {week:"15-16",en:"Thanks a lot.",               zh:"非常感謝",         icon:"🙏"},
-    {week:"17-18",en:"Come on!",                   zh:"加油！",           icon:"📣"},
-    {week:"19-20",en:"Happy New Year.",             zh:"新年快樂",         icon:"🎆"},
+    {week:"1-2",  en:"Where are you from?",          zh:"你來自哪裡？",      icon:"🌍", scene:"遇到外國來的新同學", dialog:[{role:"👦", text:"Where are you from?"}, {role:"👧", text:"I am from Canada."}]},
+    {week:"3-4",  en:"Excuse me.",                   zh:"不好意思",          icon:"🙇", scene:"想請問路人圖書館怎麼走", dialog:[{role:"👦", text:"Excuse me. 請問圖書館在哪？"}, {role:"👨", text:"在前面右轉喔。"}]},
+    {week:"5-6",  en:"Can you help me?",             zh:"你能幫幫我嗎？",    icon:"🤝", scene:"東西掉到桌子下面的縫隙", dialog:[{role:"👧", text:"Can you help me? 我撿不到橡皮擦。"}, {role:"👦", text:"我幫你拿！"}]},
+    {week:"7-8",  en:"Amazing!",                     zh:"了不起！",          icon:"🤯", scene:"看到同學畫了一幅超棒的畫", dialog:[{role:"👦", text:"這是我畫的恐龍。"}, {role:"👧", text:"Amazing! 好像真的！"}]},
+    {week:"9-10", en:"Follow me!",                   zh:"跟我來！",          icon:"👣", scene:"帶領迷路的學弟回教室", dialog:[{role:"👦", text:"我找不到一年一班..."}, {role:"👧", text:"Follow me! 我帶你去。"}]},
+    {week:"11-12",en:"Well done.",                   zh:"做得好",            icon:"👏", scene:"順利完成老師交代的重要任務", dialog:[{role:"👩", text:"教室打掃得很乾淨，Well done."}, {role:"👦", text:"謝謝老師！"}]},
+    {week:"13-14",en:"Really?",                      zh:"真的嗎？",          icon:"🤨", scene:"聽到一個令人驚訝的消息", dialog:[{role:"👦", text:"明天不用上課喔！"}, {role:"👧", text:"Really? 為什麼？"}]},
+    {week:"15-16",en:"Thanks a lot.",                zh:"非常感謝",          icon:"🙏", scene:"同學借你忘了帶的彩色筆", dialog:[{role:"👦", text:"彩色筆借你用。"}, {role:"👧", text:"Thanks a lot."}]},
+    {week:"17-18",en:"Come on!",                     zh:"加油！",            icon:"📣", scene:"在大隊接力時幫同學加油", dialog:[{role:"👧", text:"Come on! 衝啊！快到了！"}, {role:"👦", text:"(拼命跑)"}]},
+    {week:"19-20",en:"Happy New Year.",              zh:"新年快樂",          icon:"🎆", scene:"跨年看煙火時", dialog:[{role:"👦", text:"5, 4, 3, 2, 1！"}, {role:"👧", text:"Happy New Year."}]},
   ]},
   "5-2":{ title:"小五下", sentences:[
-    {week:"1-2",  en:"What did you do last night?", zh:"你昨晚做了什麼事？",icon:"🌙"},
-    {week:"3-4",  en:"Are you kidding?",            zh:"你在開玩笑嗎？",  icon:"🤪"},
-    {week:"5-6",  en:"Seeing is believing.",        zh:"眼見為憑",         icon:"👀"},
-    {week:"7-8",  en:"It's a long story.",          zh:"說來話長",         icon:"📖"},
-    {week:"9-10", en:"Here we go.",                 zh:"走吧！",           icon:"🎬"},
-    {week:"11-12",en:"Time is money.",              zh:"時間就是金錢",     icon:"⏳"},
-    {week:"13-14",en:"How much is it?",             zh:"這多少錢？",       icon:"💵"},
-    {week:"15-16",en:"Take a look.",                zh:"看一看",           icon:"🔎"},
-    {week:"17-18",en:"Oh, poor you.",               zh:"哦，你好可憐",     icon:"🥺"},
-    {week:"19-20",en:"Dance with me!",              zh:"跟我一起跳舞吧！",icon:"💃"},
+    {week:"1-2",  en:"What did you do last night?",  zh:"你昨晚做了什麼事？",icon:"🌙", scene:"和同學聊昨天的生活", dialog:[{role:"👦", text:"What did you do last night?"}, {role:"👧", text:"我看了一部很好看的電影。"}]},
+    {week:"3-4",  en:"Are you kidding?",             zh:"你在開玩笑嗎？",    icon:"🤪", scene:"同學說了一個很扯的玩笑", dialog:[{role:"👦", text:"我昨天看到外星人喔！"}, {role:"👧", text:"Are you kidding?"}]},
+    {week:"5-6",  en:"Seeing is believing.",         zh:"眼見為憑",          icon:"👀", scene:"不相信同學會變魔術", dialog:[{role:"👦", text:"我真的會讓硬幣消失！"}, {role:"👧", text:"Seeing is believing. 變給我看！"}]},
+    {week:"7-8",  en:"It's a long story.",           zh:"說來話長",          icon:"📖", scene:"被問到為什麼遲到那麼久", dialog:[{role:"👩", text:"你怎麼遲到了？"}, {role:"👦", text:"It's a long story. 腳踏車爆胎又遇到迷路的小狗..."}]},
+    {week:"9-10", en:"Here we go.",                  zh:"走吧！",            icon:"🎬", scene:"坐上雲霄飛車準備出發", dialog:[{role:"👦", text:"Here we go!"}, {role:"👧", text:"啊啊啊啊好可怕！"}]},
+    {week:"11-12",en:"Time is money.",               zh:"時間就是金錢",      icon:"⏳", scene:"催促動作很慢的同學", dialog:[{role:"👦", text:"再等我十分鐘挑飲料... "}, {role:"👧", text:"快點啦！Time is money."}]},
+    {week:"13-14",en:"How much is it?",              zh:"這多少錢？",        icon:"💵", scene:"在合作社買點心", dialog:[{role:"👦", text:"老闆，這個麵包 How much is it?"}, {role:"👨", text:"二十五元喔。"}]},
+    {week:"15-16",en:"Take a look.",                 zh:"看一看",            icon:"🔎", scene:"給同學看新買的手錶", dialog:[{role:"👦", text:"我買了新手錶，Take a look."}, {role:"👧", text:"哇，好酷喔！"}]},
+    {week:"17-18",en:"Oh, poor you.",                zh:"哦，你好可憐",      icon:"🥺", scene:"同學說他不小心跌倒擦傷", dialog:[{role:"👦", text:"我昨天跑步摔跤，膝蓋好痛。"}, {role:"👧", text:"Oh, poor you."}]},
+    {week:"19-20",en:"Dance with me!",               zh:"跟我一起跳舞吧！",  icon:"💃", scene:"音樂課放了很好聽的音樂", dialog:[{role:"👦", text:"這首歌好讚！Dance with me!"}, {role:"👧", text:"好啊，一起跳！"}]},
   ]},
   "6-1":{ title:"小六上", sentences:[
-    {week:"1-2",  en:"Have a good time.",                    zh:"祝您玩得愉快！",       icon:"🎉"},
-    {week:"3-4",  en:"Taiwan is famous for its bubble tea.",zh:"台灣以珍珠奶茶聞名。",icon:"🧋"},
-    {week:"5-6",  en:"What did you do at school?",           zh:"你在學校做了什麼事情？",icon:"🏫"},
-    {week:"7-8",  en:"What happened?",                       zh:"發生什麼事了？",       icon:"😧"},
-    {week:"9-10", en:"I feel dizzy.",                        zh:"我頭暈",              icon:"😵"},
-    {week:"11-12",en:"Wait a second.",                       zh:"等一下",              icon:"⏱️"},
-    {week:"13-14",en:"What would you like for dinner?",     zh:"你晚餐想要吃什麼？",   icon:"🍽️"},
-    {week:"15-16",en:"I could eat a horse.",                 zh:"我餓極了",             icon:"🐴"},
-    {week:"17-18",en:"When is your birthday?",               zh:"你的生日是何時呢？",   icon:"🎂"},
-    {week:"19-20",en:"Take a guess.",                        zh:"猜一猜",              icon:"🤔"},
+    {week:"1-2",  en:"Have a good time.",            zh:"祝您玩得愉快！",    icon:"🎉", scene:"送朋友去搭飛機出國玩", dialog:[{role:"👦", text:"我要去日本玩五天！"}, {role:"👧", text:"Have a good time."}]},
+    {week:"3-4",  en:"Taiwan is famous for its bubble tea.",zh:"台灣以珍珠奶茶聞名。",icon:"🧋", scene:"向外國朋友介紹台灣", dialog:[{role:"👦", text:"台灣有什麼好喝的？"}, {role:"👧", text:"Taiwan is famous for its bubble tea."}]},
+    {week:"5-6",  en:"What did you do at school?",   zh:"你在學校做了什麼事情？",icon:"🏫", scene:"放學回家媽媽關心你", dialog:[{role:"👩", text:"What did you do at school?"}, {role:"👦", text:"我們今天上體育課踢足球！"}]},
+    {week:"7-8",  en:"What happened?",               zh:"發生什麼事了？",    icon:"😧", scene:"看到同學桌上東西散落一地", dialog:[{role:"👦", text:"What happened?"}, {role:"👧", text:"我的書包不小心掉到地上了..."}]},
+    {week:"9-10", en:"I feel dizzy.",                zh:"我頭暈",            icon:"😵", scene:"在太陽下站太久不舒服", dialog:[{role:"👦", text:"老師，I feel dizzy."}, {role:"👩", text:"快到陰涼處休息一下。"}]},
+    {week:"11-12",en:"Wait a second.",               zh:"等一下",            icon:"⏱️", scene:"同學叫你，但你正在忙", dialog:[{role:"👦", text:"我們去打球吧！"}, {role:"👧", text:"Wait a second. 我先把這題寫完。"}]},
+    {week:"13-14",en:"What would you like for dinner?",zh:"你晚餐想要吃什麼？",icon:"🍽️", scene:"媽媽問你晚上想吃什麼", dialog:[{role:"👩", text:"What would you like for dinner?"}, {role:"👦", text:"我想吃義大利麵！"}]},
+    {week:"15-16",en:"I could eat a horse.",         zh:"我餓極了",          icon:"🐴", scene:"運動會跑完大隊接力後", dialog:[{role:"👦", text:"我現在超餓，I could eat a horse."}, {role:"👧", text:"走，我們去吃大餐！"}]},
+    {week:"17-18",en:"When is your birthday?",       zh:"你的生日是何時呢？",icon:"🎂", scene:"想幫好朋友準備生日驚喜", dialog:[{role:"👦", text:"When is your birthday?"}, {role:"👧", text:"在十月十日喔！"}]},
+    {week:"19-20",en:"Take a guess.",                zh:"猜一猜",            icon:"🤔", scene:"買了一個神秘禮物讓同學猜", dialog:[{role:"👦", text:"你猜我買了什麼？"}, {role:"👧", text:"不知道耶。"}, {role:"👦", text:"Take a guess."}]},
   ]},
   "6-2":{ title:"小六下", sentences:[
-    {week:"1-2",  en:"What time did you watch a movie yesterday?",zh:"昨天何時看電影？",icon:"🎬"},
-    {week:"3-4",  en:"I watched a movie at 3 p.m.",         zh:"我下午三點看電影。",  icon:"🍿"},
-    {week:"5-6",  en:"Let's check it out.",                 zh:"我們去看一看",        icon:"👀"},
-    {week:"7-8",  en:"How does it taste?",                  zh:"它味道如何？",        icon:"👅"},
-    {week:"9-10", en:"It tastes good.",                     zh:"它味道不錯",          icon:"😋"},
-    {week:"11-12",en:"Give it a try.",                      zh:"你可以試試看",        icon:"🙌"},
-    {week:"13-14",en:"Make a wish.",                        zh:"許個願望",            icon:"🌠"},
-    {week:"15-16",en:"What will you do on Graduation Day?", zh:"你畢業那天要做什麼？",icon:"🎓"},
-    {week:"17-18",en:"Keep in touch.",                      zh:"保持聯絡",            icon:"💌"},
-    {week:"19-20",en:"Happy Graduation!",                   zh:"畢業快樂！",          icon:"🎉"},
+    {week:"1-2",  en:"What time did you watch a movie yesterday?",zh:"昨天何時看電影？",icon:"🎬", scene:"跟朋友聊昨天的行程", dialog:[{role:"👦", text:"What time did you watch a movie yesterday?"}, {role:"👧", text:"晚上七點！"}]},
+    {week:"3-4",  en:"I watched a movie at 3 p.m.",  zh:"我下午三點看電影。",icon:"🍿", scene:"回答朋友看電影的時間", dialog:[{role:"👦", text:"你昨天下午在做什麼？"}, {role:"👧", text:"I watched a movie at 3 p.m."}]},
+    {week:"5-6",  en:"Let's check it out.",          zh:"我們去看一看",      icon:"👀", scene:"聽說學校新開了福利社", dialog:[{role:"👦", text:"福利社有賣新冰棒耶！"}, {role:"👧", text:"Let's check it out."}]},
+    {week:"7-8",  en:"How does it taste?",           zh:"它味道如何？",      icon:"👅", scene:"同學吃了一口新口味的餅乾", dialog:[{role:"👦", text:"(大口吃餅乾)"}, {role:"👧", text:"How does it taste?"}]},
+    {week:"9-10", en:"It tastes good.",              zh:"它味道不錯",        icon:"😋", scene:"回答東西好不好吃", dialog:[{role:"👧", text:"這個蛋糕好吃嗎？"}, {role:"👦", text:"It tastes good."}]},
+    {week:"11-12",en:"Give it a try.",               zh:"你可以試試看",      icon:"🙌", scene:"鼓勵同學嘗試不敢吃的蔬菜", dialog:[{role:"👩", text:"吃一口青椒看看，Give it a try."}, {role:"👦", text:"好...我吃一小口。"}]},
+    {week:"13-14",en:"Make a wish.",                 zh:"許個願望",          icon:"🌠", scene:"切生日蛋糕前要吹蠟燭", dialog:[{role:"👦", text:"準備吹蠟燭囉！"}, {role:"👧", text:"等等，先 Make a wish."}]},
+    {week:"15-16",en:"What will you do on Graduation Day?", zh:"你畢業那天要做什麼？",icon:"🎓", scene:"快要畢業了，討論那天的計畫", dialog:[{role:"👦", text:"What will you do on Graduation Day?"}, {role:"👧", text:"我要跟老師拍很多照片！"}]},
+    {week:"17-18",en:"Keep in touch.",               zh:"保持聯絡",          icon:"💌", scene:"畢業典禮跟好朋友道別", dialog:[{role:"👦", text:"上國中後也要 Keep in touch 喔！"}, {role:"👧", text:"一定會的！"}]},
+    {week:"19-20",en:"Happy Graduation!",            zh:"畢業快樂！",        icon:"🎉", scene:"畢業典禮當天", dialog:[{role:"👩", text:"恭喜你們，Happy Graduation!"}, {role:"👦👧", text:"謝謝老師！"}]},
   ]},
 };
 
@@ -421,6 +432,16 @@ function App() {
   useEffect(() => { recStateRef.current = recState; }, [recState]);
   useEffect(() => { countsRef.current = counts; }, [counts]);
 
+  // ★ 新增：確保系統語音清單載入 (解決 iOS/Safari 語音載入延遲問題)
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+      }
+    }
+  }, []);
+
   const sentences = ALL_DATA[grade].sentences;
   const cur       = sentences[idx];
   const countKey  = `${grade}-${idx}`;
@@ -435,7 +456,7 @@ function App() {
   const ACL = isHigh ? '#d1fae5' : '#e0f2fe';
   const ACB = isHigh ? '#059669' : '#1d4ed8';
 
-  // ★ 切換題目時，安全釋放，絕不呼叫 abort，防止 iOS 當機
+  // ★ 切換題目時，安全釋放
   useEffect(() => {
     if(recorderRef.current) { try{recorderRef.current.abort();}catch(e){} recorderRef.current = null; }
     if(recognitionRef.current) { try{recognitionRef.current.stop();}catch(e){} recognitionRef.current = null; }
@@ -446,6 +467,9 @@ function App() {
     setAiStatus('idle');
     if(audioUrl){ URL.revokeObjectURL(audioUrl); }
     setAudioUrl(null);
+    
+    // 每次換題時中斷說話
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
   }, [idx, grade]);
 
   // ★ 離開頁面時的安全釋放
@@ -453,17 +477,84 @@ function App() {
     if(recorderRef.current) { try{recorderRef.current.abort();}catch(e){} }
     if(recognitionRef.current) { try{recognitionRef.current.stop();}catch(e){} }
     clearTimeout(timerRef.current);
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
   }, []);
 
   const showHint = msg => { setHint(msg); setTimeout(()=>setHint(''), 3000); };
 
-  /* TTS 老師發音 */
+  /* 🌟 新增：智能獲取最佳人聲 (尋找最自然的高階語音) */
+  const getBestVoice = (langPrefix) => {
+    if (!window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    let candidates = voices.filter(v => v.lang.startsWith(langPrefix));
+    if (candidates.length === 0) return null;
+
+    if (langPrefix === 'zh') {
+      // 優先尋找台灣繁中
+      let twVoices = candidates.filter(v => v.lang === 'zh-TW' || v.lang === 'zh_TW');
+      if (twVoices.length > 0) candidates = twVoices;
+      // 優先挑選高階自然人聲 (包含 Google, iOS 內建好聽的聲音)
+      const premiumNames = ['Google 國語（臺灣）', 'Mei-Jia', 'Meijia', 'Yating', 'Hanhan', 'Siri', 'Ting-Ting'];
+      for (let name of premiumNames) {
+        const match = candidates.find(v => v.name.includes(name));
+        if (match) return match;
+      }
+    } else if (langPrefix === 'en') {
+      const premiumNames = ['Google US English', 'Samantha', 'Alex', 'Fred', 'Victoria', 'Siri'];
+      for (let name of premiumNames) {
+        const match = candidates.find(v => v.name.includes(name));
+        if (match) return match;
+      }
+    }
+    // 如果沒有特定高階聲音，回傳第一個該語言的聲音
+    return candidates[0];
+  };
+
+  /* TTS 老師發音 (套用最佳英文語音) */
   const speak = useCallback(text => {
     if(!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text.replace(/\n/g,' '));
-    u.lang='en-US'; u.rate=rate; u.pitch=1.1;
+    u.lang = 'en-US'; 
+    u.rate = rate; 
+    u.pitch = 1.1;
+    const bestVoice = getBestVoice('en');
+    if (bestVoice) u.voice = bestVoice;
+    
     window.speechSynthesis.speak(u);
+  }, [rate]);
+
+  /* ★ 小劇場 AI 角色配音邏輯 (套用最佳中/英人聲與音高變化) */
+  const playScene = useCallback((dialogArray) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+
+    dialogArray.forEach((d) => {
+      const u = new SpeechSynthesisUtterance(d.text);
+      
+      // 判斷是否包含中文字，如果是就切換到中文，否則英文
+      const isChinese = /[\u4e00-\u9fff]/.test(d.text);
+      u.lang = isChinese ? 'zh-TW' : 'en-US';
+      
+      // 尋找該語言最接近人聲的引擎
+      const bestVoice = getBestVoice(isChinese ? 'zh' : 'en');
+      if (bestVoice) u.voice = bestVoice;
+      
+      u.rate = rate;
+
+      // 依照人物圖案給予不同聲音特色 (模擬男女老少)
+      if (d.role.includes('👦') || d.role.includes('👨')) {
+          u.pitch = 0.85; // 稍低沉
+      } else if (d.role.includes('👧') || d.role.includes('👩')) {
+          u.pitch = 1.35; // 較清脆高昂
+      } else {
+          u.pitch = 1.0;
+      }
+
+      window.speechSynthesis.speak(u);
+    });
   }, [rate]);
 
   /* ★ iOS 專用手動錄音按鈕邏輯 */
@@ -500,7 +591,7 @@ function App() {
     }
   };
 
-  /* ★ 全新無死角結算函式 (確保蘋果伺服器回應後才算分) */
+  /* ★ 全新無死角結算函式 */
   const evaluateScore = () => {
        let finalScore = 0;
        let currentAiStatus = 'idle';
@@ -548,15 +639,13 @@ function App() {
        }
   };
 
-  /* ★ 收尾總指揮：負責關閉錄音機，並呼叫結算 */
+  /* ★ 收尾總指揮 */
   const triggerFinish = () => {
-      // 避免重複進入結算
       if (recStateRef.current !== 'recording' && recStateRef.current !== 'processing') return;
 
       setRecState('processing');
       clearTimeout(timerRef.current);
 
-      // 把筆電/安卓的同步錄音機關掉，取得音檔
       if(recorderRef.current) {
           recorderRef.current.stop().then(url => {
               if (recStateRef.current !== 'idle') setAudioUrl(url);
@@ -564,22 +653,19 @@ function App() {
           recorderRef.current = null;
       }
 
-      // 正式打分
       evaluateScore();
   };
 
   /* ★ 使用者點擊「停止」，或 6 秒防呆強制停止 */
   const handleStopRecording = () => {
       if (recStateRef.current !== 'recording') return;
-      setRecState('processing'); // 顯示處理中，耐心等待蘋果
+      setRecState('processing'); 
       clearTimeout(timerRef.current);
 
-      // 溫柔地請蘋果 AI 準備結單，這會觸發原生的 onend
       if(recognitionRef.current) {
           try { recognitionRef.current.stop(); } catch(e){}
       }
 
-      // 啟動 3 秒保底計時器：如果網路斷線、蘋果 onend 死掉沒觸發，3秒後強制收卷！
       timerRef.current = setTimeout(() => {
           if (recStateRef.current === 'processing') {
               triggerFinish();
@@ -595,10 +681,8 @@ function App() {
       }
       
       try {
-        // 先暫停老師的聲音，以免被錄進去
         if(window.speechSynthesis) window.speechSynthesis.cancel();
 
-        // 核心修復：徹底斬斷前次任何可能殘留的幽靈麥克風
         if(recognitionRef.current) {
             try { recognitionRef.current.abort(); } catch(err){}
             recognitionRef.current = null;
@@ -615,7 +699,7 @@ function App() {
            const recognition = new SR();
            recognition.lang = 'en-US';
            recognition.interimResults = true; 
-           recognition.continuous = false; // 交給 iOS 靜音自動停止
+           recognition.continuous = false; 
            
            recognition.onresult = (e) => {
                let finalStr = "";
@@ -625,7 +709,6 @@ function App() {
                transcriptRef.current = finalStr.trim();
            };
 
-           // ★ 關鍵：蘋果真正辨識完畢，一定會走這裡！在這裡結算才是最準確的！
            recognition.onend = () => {
                if (recStateRef.current === 'recording' || recStateRef.current === 'processing') {
                    triggerFinish();
@@ -651,7 +734,6 @@ function App() {
         setAiScore(0);
         setAiStatus('idle');
 
-        // 6 秒自動收卷防呆 (防止一直卡在錄音中)
         clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
             if (recStateRef.current === 'recording') {
@@ -668,7 +750,6 @@ function App() {
       }
   };
 
-  /* 總開關 */
   const handleRecordClick = () => {
       if (recState === 'recording') {
           handleStopRecording();
@@ -748,14 +829,12 @@ function App() {
           </div>
         )}
 
-        {/* 並排比較區 */}
         <div style={{background:'#f8fafc',borderRadius:18,padding:14,border:'2px solid #f1f5f9'}}>
           <div style={{fontSize:12,fontWeight:800,color:'#94a3b8',textAlign:'center',marginBottom:10,letterSpacing:1}}>
             {isIOS ? '多聽老師唸幾次，發音會越來越標準喔！' : '比一比，聽聽差在哪裡'}
           </div>
           <div style={{display:'grid',gridTemplateColumns: (!isIOS && audioUrl) ? '1fr 1fr' : '1fr',gap:10}}>
             
-            {/* 老師聲音 */}
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:11,fontWeight:800,color:ACD,marginBottom:6,
                 background:ACL,padding:'3px 8px',borderRadius:999,display:'inline-block'}}>
@@ -768,7 +847,6 @@ function App() {
               </button>
             </div>
 
-            {/* 學生聲音 */}
             {(!isIOS && audioUrl) && (
               <div style={{textAlign:'center'}}>
                 <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
@@ -779,7 +857,6 @@ function App() {
               </div>
             )}
             
-            {/* 【Apple 系統】專屬的純錄音按鈕 */}
             {isIOS && (
               <div style={{textAlign:'center'}}>
                 <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
@@ -807,9 +884,7 @@ function App() {
           </div>
         </div>
         
-        {/* 再挑戰一次 */}
         <button onClick={()=>{ 
-            // 重新挑戰前，徹底摧毀上一次的麥克風連結
             if(recognitionRef.current) { try{recognitionRef.current.abort();}catch(e){} recognitionRef.current = null; }
             if(recorderRef.current) { try{recorderRef.current.abort();}catch(e){} recorderRef.current = null; }
             clearTimeout(timerRef.current);
@@ -826,7 +901,6 @@ function App() {
       </div>
     );
 
-    // idle
     return (
       <button onClick={handleRecordClick}
         style={{width:'100%',background:'#fff',border:'4px solid #34d399',
@@ -853,7 +927,6 @@ function App() {
         </div>
       )}
 
-      {/* 提示浮動 */}
       {hint && (
         <div className="hint-toast" style={{position:'fixed',top:18,left:'50%',transform:'translateX(-50%)',zIndex:60}}>
           {hint}
@@ -869,8 +942,6 @@ function App() {
         boxShadow:'0 2px 12px rgba(0,0,0,.06)',
       }}>
         <div style={{maxWidth:500,margin:'0 auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:10}}>
-
-          {/* 標題列 */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
             <div style={{fontWeight:900,fontSize:14,color:ACD}}>🏫 景美國小｜英語每週一句</div>
             <button onClick={()=>setSidebar(true)} style={{
@@ -879,16 +950,13 @@ function App() {
             }}>🏆 收集本</button>
           </div>
 
-          {/* 低年級 */}
           <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:6}}>
             {LOW.map(k=><GradeBtn key={k} k={k} ac="#0ea5e9" acd="#0284c7"/>)}
           </div>
-          {/* 高年級 */}
           <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:6}}>
             {HIGH.map(k=><GradeBtn key={k} k={k} ac="#10b981" acd="#059669"/>)}
           </div>
 
-          {/* 進度條 */}
           <div>
             <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:900,color:ACD,marginBottom:4}}>
               <span>練習進度</span>
@@ -905,7 +973,6 @@ function App() {
       <main style={{flex:1,display:'flex',justifyContent:'center',padding:16}}>
         <div className="card" style={{width:'100%',maxWidth:500,border:`4px solid ${ACL}`}}>
 
-          {/* 週次 */}
           <div style={{background:AC,color:'#fff',textAlign:'center',padding:'11px',
             fontWeight:900,fontSize:20,letterSpacing:4}}>
             第 {cur.week} 週
@@ -933,6 +1000,55 @@ function App() {
               {cur.zh}
             </div>
 
+            {/* 🌟 升級版：有聲音與動畫的情境小劇場 */}
+            <div className="slide-up" style={{ 
+                width: '100%', background: '#fdf4ff', borderRadius: 20, 
+                padding: '14px 16px', border: '2px dashed #f0abfc', 
+                display: 'flex', flexDirection: 'column', gap: 10 
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: '#a21caf', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>🎬</span> <span>情境小劇場：{cur.scene}</span>
+                    </div>
+                    {/* 🌟 新增的播放小短劇按鈕 */}
+                    <button onClick={() => playScene(cur.dialog)} className="btn-3d"
+                        style={{
+                            background: '#d946ef', color: '#fff', border: 'none', borderRadius: 999,
+                            padding: '6px 12px', fontSize: 12, fontWeight: 900, cursor: 'pointer',
+                            '--sh': '#a21caf', boxShadow: '0 3px 0 #a21caf',
+                            display: 'flex', alignItems: 'center', gap: 4
+                        }}>
+                        ▶️ 聽對話
+                    </button>
+                </div>
+                
+                {/* 加入 key={idx} 讓每次切換題目都會重新觸發彈跳動畫 */}
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                    {cur.dialog.map((d, i) => (
+                        <div key={i} style={{ 
+                            display: 'flex', gap: 8, alignItems: 'flex-start', 
+                            justifyContent: i % 2 === 0 ? 'flex-start' : 'flex-end',
+                            /* 🌟 加上交錯彈跳的動畫，讓對話活起來 */
+                            opacity: 0,
+                            animation: i % 2 === 0 ? 'popInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' : 'popInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                            animationDelay: `${i * 0.4}s`
+                          }}>
+                            {i % 2 === 0 && <span style={{ fontSize: 26, alignSelf:'center', filter:'drop-shadow(0 2px 2px rgba(0,0,0,0.1))' }}>{d.role}</span>}
+                            <div style={{ 
+                                background: '#fff', padding: '8px 12px', 
+                                borderRadius: i % 2 === 0 ? '0 14px 14px 14px' : '14px 0 14px 14px', 
+                                border: '2px solid #fae8ff', fontSize: 15, fontWeight: 800, 
+                                color: '#4a044e', maxWidth: '85%',
+                                boxShadow: '0 2px 8px rgba(250, 232, 255, 0.8)'
+                              }}>
+                                {d.text}
+                            </div>
+                            {i % 2 !== 0 && <span style={{ fontSize: 26, alignSelf:'center', filter:'drop-shadow(0 2px 2px rgba(0,0,0,0.1))' }}>{d.role}</span>}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
             {/* 練習次數星星 */}
             <PracticeStars />
 
@@ -940,14 +1056,13 @@ function App() {
             <div style={{width:'100%',background:'#f8fafc',borderRadius:22,
               padding:14,border:'2px solid #f1f5f9',display:'flex',flexDirection:'column',gap:10}}>
 
-              {/* 步驟提示 */}
               <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,
                 fontSize:12,fontWeight:800,color:'#94a3b8'}}>
                 <span style={{color: '#374151'}}>①</span> 先聽老師說
                 <span style={{color:'#d1d5db',margin:'0 4px'}}>→</span>
-                <span style={{color: '#374151'}}>②</span> 錄音拿高分
+                <span style={{color: '#374151'}}>②</span> 代入情境唸
                 <span style={{color:'#d1d5db',margin:'0 4px'}}>→</span>
-                <span style={{color: '#374151'}}>③</span> 比較聲音
+                <span style={{color: '#374151'}}>③</span> 錄音拿高分
               </div>
 
               {/* TTS */}
@@ -999,7 +1114,6 @@ function App() {
               ←
             </button>
 
-            {/* 中間顯示週次 */}
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:14,fontWeight:900,color:ACD}}>
                 {idx+1} / {sentences.length}
@@ -1022,7 +1136,7 @@ function App() {
       {/* Footer */}
       <footer style={{textAlign:'center',padding:'10px 0 18px',
         fontSize:11,fontWeight:800,color:'rgba(2,132,199,.4)'}}>
-        AI協作設計：鍾子韶老師 / 王佐民老師 / 梁中梅老師 / 何進益老師
+        AI協作設計：鍾子韶老師 / 王佐民老師 / 梁中梅老師 / 何進益老師<br/>情境聲動增強版
       </footer>
 
       {/* 側邊欄遮罩 */}
