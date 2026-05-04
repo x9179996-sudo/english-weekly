@@ -345,8 +345,53 @@ const calcScore = comp => {
 /* ═══════════════════════════════════════════════════
    iOS SpeechRecognition 管理器
 ═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   音訊錄製管理器（提供回放功能）
+═══════════════════════════════════════════════════ */
+class AudioRecorder {
+  constructor(){ this.mr=null; this.chunks=[]; this.url=null; }
+
+  async start(stream){
+    this.chunks=[];
+    if(this.url){ URL.revokeObjectURL(this.url); this.url=null; }
+    // 選擇 iOS 支援的格式
+    const mime = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+               : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+               : '';
+    this.mr = new MediaRecorder(stream, mime ? {mimeType:mime} : {});
+    this.mr.ondataavailable = e=>{ if(e.data.size>0) this.chunks.push(e.data); };
+    this.mr.start();
+  }
+
+  stop(){
+    return new Promise(resolve=>{
+      if(!this.mr){ resolve(null); return; }
+      this.mr.onstop = ()=>{
+        const blob = new Blob(this.chunks);
+        this.url = URL.createObjectURL(blob);
+        resolve(this.url);
+      };
+      try{ this.mr.stop(); }catch(e){ resolve(null); }
+    });
+  }
+
+  abort(){
+    if(this.mr){ try{ this.mr.stop(); }catch(e){} this.mr=null; }
+    this.chunks=[];
+  }
+}
+const AR = new AudioRecorder();
+
+/* ═══════════════════════════════════════════════════
+   iOS SpeechRecognition 管理器
+═══════════════════════════════════════════════════ */
 class SpeechManager {
-  constructor(){ this.r=null; this.active=false; this.timer=null; this.gotResult=false; }
+  constructor(){
+    this.r=null; this.active=false; this.timer=null; this.gotResult=false;
+    this.stream=null; // 保留 MediaStream 供 AudioRecorder 共用
+    this.silentRetries=0; // 自動靜默重試計數
+    this.MAX_SILENT=2;    // 最多自動重試 2 次再顯示提示
+  }
 
   supported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
 
@@ -360,8 +405,23 @@ class SpeechManager {
     this.gotResult=false;
   }
 
-  start({ onResult, onError, onEnd, onNoResult, timeout=6000 }){
+  _releaseStream(){
+    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
+  }
+
+  async start({ onResult, onError, onEnd, onNoResult, onRetrying, timeout=7000 }){
     this._clean();
+
+    // 先取得麥克風權限並同時啟動錄音
+    try{
+      this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      await AR.start(this.stream);
+    }catch(e){
+      this._releaseStream();
+      onError({code:'permission', msg:'請允許麥克風權限後再試！'});
+      return;
+    }
+
     const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
     const r  = new SR();
     this.r   = r;
@@ -372,8 +432,13 @@ class SpeechManager {
     r.onresult = ev => {
       clearTimeout(this.timer);
       this.gotResult = true;
+      this.silentRetries = 0;
       const list = Array.from(ev.results[0]).map(a=>a.transcript.trim());
-      onResult(list, list[0]||'');
+      // 先停止 MediaRecorder，拿到音訊 URL 後一起回傳
+      AR.stop().then(audioUrl=>{
+        this._releaseStream();
+        onResult(list, audioUrl);
+      });
     };
 
     r.onerror = ev => {
@@ -387,20 +452,30 @@ class SpeechManager {
         'service-not-allowed':{code:'permission',  msg:'語音服務未開放，請確認 Safari 設定。'},
       };
       const e = MAP[ev.error]||{code:'unknown', msg:'辨識時發生問題，請再試一次。'};
-      this._clean();
+      AR.abort(); this._clean(); this._releaseStream();
       onError(e);
     };
 
     r.onend = ()=>{
       clearTimeout(this.timer);
-      const wasActive   = this.active;
-      const hadResult   = this.gotResult;
+      const wasActive = this.active;
+      const hadResult = this.gotResult;
       this._clean();
 
       if(wasActive && !hadResult){
-        // iOS 在 en-US 模式聽到中文時，不給 onresult 直接 onend
-        // 用 onNoResult 通知主元件處理
-        onNoResult();
+        // 沒拿到結果：先嘗試自動靜默重試，避免打擾學生
+        if(this.silentRetries < this.MAX_SILENT){
+          this.silentRetries++;
+          AR.abort();
+          this._releaseStream();
+          onRetrying(this.silentRetries);  // 通知 UI 顯示「再聽一次...」
+          setTimeout(()=> this.start({onResult,onError,onEnd,onNoResult,onRetrying,timeout}), 600);
+        } else {
+          // 重試都失敗才回傳 onNoResult
+          this.silentRetries = 0;
+          AR.abort(); this._releaseStream();
+          onNoResult();
+        }
       } else {
         onEnd();
       }
@@ -410,13 +485,19 @@ class SpeechManager {
       r.start();
       this.timer = setTimeout(()=>{ try{ this.r?.stop(); }catch(e){} }, timeout);
     }catch(e){
-      this._clean();
+      AR.abort(); this._clean(); this._releaseStream();
       onError({code:'start-fail', msg:'無法啟動麥克風，請重新整理頁面。'});
     }
   }
 
   stop(){ try{ this.r?.stop(); }catch(e){} }
-  abort(){ this._clean(); }
+
+  abort(){
+    AR.abort();
+    this._clean();
+    this._releaseStream();
+    this.silentRetries=0;
+  }
 }
 const SM = new SpeechManager();
 
@@ -436,6 +517,8 @@ function App(){
   const [comparison,setComparison] = useState([]);
   const [errMsg,setErrMsg]     = useState('');
   const [retries,setRetries]   = useState(0);
+  const [audioUrl,setAudioUrl] = useState(null);   // 學生說話的錄音 URL
+  const [retrying,setRetrying] = useState(0);      // 靜默重試次數（顯示用）
   const MAX_RETRY = 1;
 
   const sentences = ALL_DATA[grade].sentences;
@@ -454,6 +537,7 @@ function App(){
   useEffect(()=>{
     setListened(false); setHint(''); setRecStatus('idle');
     setComparison([]); setErrMsg(''); setRetries(0);
+    setAudioUrl(null); setRetrying(0);
     SM.abort();
   },[idx,grade]);
 
@@ -479,14 +563,17 @@ function App(){
 
     setRecStatus('recording'); setComparison([]); setErrMsg('');
 
-    SM.start({
-      timeout: 6000,
+    setRetrying(0);
 
-      onResult:(list)=>{
-        setRetries(0);
-        // onresult 有回來：先檢查是否包含中文字符
-        // 只有當所有辨識候選都含中文字符，才確定是說中文
-        // 用 every 而非 some，避免英文說得不標準時被誤判
+    SM.start({
+      timeout: 7000,
+
+      // onResult 現在多帶一個 audioUrl（MediaRecorder 錄下的音訊）
+      onResult:(list, url)=>{
+        setRetries(0); setRetrying(0);
+        setAudioUrl(url);   // 存下讓學生可以回放
+
+        // 只有全部候選都是中文才判中文
         if(list.length > 0 && list.every(hasChinese)){ setRecStatus('fail_lang'); return; }
 
         let bestComp=[], bestScore=-1;
@@ -503,25 +590,30 @@ function App(){
         else                    setRecStatus('fail_unclear');
       },
 
-      // iOS 修復：有收音但沒拿到辨識結果
-      // 可能原因：說太輕、噪音、網路延遲、或 iOS 不支援該口音
-      // 不能判定為中文（誤判率太高）—— 改為「沒聽清楚」提示
+      // 靜默重試中：SpeechManager 內部自動重試，這裡只更新 UI 計數
+      onRetrying:(count)=>{
+        setRetrying(count);
+      },
+
+      // 重試全部失敗才呼叫：改顯示「沒聽清楚」
       onNoResult:()=>{
+        setRetrying(0);
         setRecStatus('fail_unclear');
       },
 
       onError:({code,msg})=>{
+        setRetrying(0);
         if(code==='silence'||code==='aborted'){ setRecStatus('idle'); return; }
         if(code==='network' && retries<MAX_RETRY){
           setRetries(r=>r+1);
-          setTimeout(()=>doRecord(true), 900);
-          return;
+          return; // SpeechManager 自己重試，這裡不需要做額外動作
         }
         setErrMsg(msg||'請再試一次。');
         setRecStatus(code==='permission'||code==='no-mic' ? 'error' : 'fail_unclear');
       },
 
       onEnd:()=>{
+        setRetrying(0);
         setRecStatus(p=>p==='recording'?'idle':p);
       },
     });
@@ -565,7 +657,7 @@ function App(){
               <div key={i} className="wave-bar" style={{width:5,height:16,background:'#ef4444',borderRadius:3,animationDelay:`${i*.12}s`}}/>
             ))}
           </div>
-          用心聽你說… (點我停止)
+          {retrying > 0 ? `再聽一次… (第 ${retrying+1} 次)` : '用心聽你說… (點我停止)'}
         </button>
       </div>
     );
@@ -574,6 +666,10 @@ function App(){
       <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:8}}>
         <div style={{background:'#10b981',borderRadius:18,padding:'12px 16px',color:'#fff',fontWeight:900,fontSize:17,textAlign:'center'}}>
           <div>⭐ 太棒了！全部說對！</div>
+                    {audioUrl && (
+            <audio controls src={audioUrl}
+              style={{width:'100%',height:32,marginTop:6,borderRadius:8,opacity:0.85}}/>
+          )}
           <button onClick={()=>setRecStatus('idle')} style={{marginTop:8,fontSize:12,background:'rgba(255,255,255,.2)',border:'none',color:'#fff',borderRadius:999,padding:'4px 16px',cursor:'pointer',fontFamily:'inherit'}}>再說一次</button>
         </div>
         <WordComp/>
@@ -584,6 +680,10 @@ function App(){
       <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:8}}>
         <div style={{background:'#0ea5e9',borderRadius:18,padding:'12px 16px',color:'#fff',fontWeight:900,fontSize:17,textAlign:'center'}}>
           <div>🌟 說得不錯！還可以更好！</div>
+                    {audioUrl && (
+            <audio controls src={audioUrl}
+              style={{width:'100%',height:32,marginTop:6,borderRadius:8,opacity:0.85}}/>
+          )}
           <button onClick={()=>setRecStatus('idle')} style={{marginTop:8,fontSize:12,background:'rgba(255,255,255,.2)',border:'none',color:'#fff',borderRadius:999,padding:'4px 16px',cursor:'pointer',fontFamily:'inherit'}}>再說一次</button>
         </div>
         <WordComp/>
@@ -605,6 +705,13 @@ function App(){
           <div style={{fontSize:12,fontWeight:700,color:'#a16207'}}>
             跟著念：<em>「{cur.en.split('\n')[0]}」</em>
           </div>
+          {audioUrl && (
+            <div style={{fontSize:11,color:'#a16207',marginTop:2}}>
+              ▶ 聽聽你剛才說了什麼：
+              <audio controls src={audioUrl}
+                style={{width:'100%',height:28,marginTop:4,borderRadius:8}}/>
+            </div>
+          )}
           <button
             onClick={()=>{ setRecStatus('idle'); setTimeout(()=>doRecord(true),200); }}
             style={{fontSize:13,background:'#fde047',border:'none',color:'#713f12',borderRadius:999,padding:'6px 20px',cursor:'pointer',fontFamily:'inherit',fontWeight:900}}>
