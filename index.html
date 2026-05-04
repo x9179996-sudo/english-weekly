@@ -280,7 +280,6 @@ const saveCounts = (c) => {
 };
 
 // 🌟 核心防護機制：偵測是否為 Apple iPad/iPhone
-// iPadOS 13 之後會偽裝成 MacIntel，所以需要檢查 maxTouchPoints
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /* ═══════════════════════════════════════════════
@@ -400,13 +399,16 @@ function App() {
   const [hint, setHint]       = useState('');
   const [counts, setCounts]   = useState(loadCounts);
   
-  // 錄音與 AI 評分狀態: 'idle' | 'recording' | 'processing' | 'done'
+  // 一般錄音與 AI 評分狀態: 'idle' | 'recording' | 'processing' | 'done'
   const [recState, setRecState] = useState('idle');
   const [audioUrl, setAudioUrl] = useState(null);
   
+  // ★ 新增：專為 Apple iOS 設計的「純錄音狀態」
+  const [iosRecState, setIosRecState] = useState('idle'); 
+  
   // AI 評分相關狀態
   const [aiScore, setAiScore]   = useState(0);
-  const [aiStatus, setAiStatus] = useState('idle'); // 'success', 'fail_language', 'fail_unclear'
+  const [aiStatus, setAiStatus] = useState('idle');
   const isAiSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const recorderRef = useRef(null);
@@ -427,11 +429,12 @@ function App() {
   const ACL = isHigh ? '#d1fae5' : '#e0f2fe';
   const ACB = isHigh ? '#059669' : '#1d4ed8';
 
-  // 切換題目時重置狀態
+  // 切換題目時重置所有狀態
   useEffect(() => {
     if(recorderRef.current) { recorderRef.current.abort(); recorderRef.current=null; }
     if(recognitionRef.current) { try{ recognitionRef.current.abort(); }catch(e){} }
     setRecState('idle');
+    setIosRecState('idle'); // 清除 Apple 專屬錄音狀態
     setAiStatus('idle');
     if(audioUrl){ URL.revokeObjectURL(audioUrl); }
     setAudioUrl(null);
@@ -444,7 +447,7 @@ function App() {
 
   const showHint = msg => { setHint(msg); setTimeout(()=>setHint(''), 3000); };
 
-  /* TTS */
+  /* TTS 老師發音 */
   const speak = useCallback(text => {
     if(!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -453,7 +456,39 @@ function App() {
     window.speechSynthesis.speak(u);
   }, [rate]);
 
-  /* 雙效合併：點擊錄音/停止按鈕 */
+  /* ★ 新增：專門給 Apple iPad/iPhone 使用的手動錄音按鈕邏輯 */
+  const handleIosOnlyRecord = async () => {
+    if (iosRecState === 'recording') {
+      // 停止錄音
+      if (recorderRef.current) {
+        try {
+          const url = await recorderRef.current.stop();
+          setAudioUrl(url);
+        } catch (e) {
+          console.log("iOS Stop Record Error", e);
+        }
+        recorderRef.current = null;
+      }
+      setIosRecState('idle');
+      return;
+    }
+    
+    // 開始純錄音
+    if(!navigator.mediaDevices?.getUserMedia) {
+      showHint('這個裝置不支援錄音功能');
+      return;
+    }
+    try {
+      setAudioUrl(null);
+      setIosRecState('recording');
+      recorderRef.current = await startRecording();
+    } catch(e) {
+      setIosRecState('idle');
+      showHint('無法啟動麥克風！');
+    }
+  };
+
+  /* 雙效合併：一般點擊錄音/評分處理 */
   const handleRecord = async () => {
     // 🛑 停止錄音與開始評分處理
     if(recState === 'recording') {
@@ -470,7 +505,6 @@ function App() {
       }
       setAudioUrl(url);
 
-      // 給予一點緩衝時間讓 Web Speech API 的結果更新完畢
       setTimeout(() => {
          let finalScore = 0;
          let currentAiStatus = 'idle';
@@ -527,7 +561,7 @@ function App() {
     try {
       transcriptRef.current = ""; 
       
-      // 1. 同步啟動 AI 語音辨識 (避免 iOS 等待 await 導致丟失授權)
+      // 1. 同步啟動 AI 語音辨識 (iOS 必須優先)
       if(isAiSupported) {
          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
          const recognition = new SR();
@@ -544,7 +578,7 @@ function App() {
          try { recognition.start(); } catch(err){}
       }
 
-      // 2. 啟動錄音機回放功能 (iPad/iPhone 保護機制：如果是 iOS 則跳過，確保 AI 完全獨佔麥克風)
+      // 2. 啟動錄音機回放功能 (iPad/iPhone 保護機制：如果是 iOS 則在此階段「完全不開啟錄音機」，把麥克風 100% 讓給 AI)
       if (!isIOS) {
           if (navigator.mediaDevices?.getUserMedia) {
               try {
@@ -624,7 +658,8 @@ function App() {
       </div>
     );
 
-    if(recState === 'done' && (audioUrl || isIOS)) return (
+    // ★ 當評分完畢時 (done)
+    if(recState === 'done') return (
       <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:10}}>
         
         {/* AI 評分結果面板 */}
@@ -640,12 +675,13 @@ function App() {
           </div>
         )}
 
-        {/* 並排比較區 (iPad 自動切換為專心聽老師模式) */}
+        {/* 並排比較區：如果是 Apple 設備 (isIOS)，這裡會提供額外的「接力錄音按鈕」 */}
         <div style={{background:'#f8fafc',borderRadius:18,padding:14,border:'2px solid #f1f5f9'}}>
           <div style={{fontSize:12,fontWeight:800,color:'#94a3b8',textAlign:'center',marginBottom:10,letterSpacing:1}}>
-            {isIOS ? '多聽老師唸幾次，發音會越來越標準喔！' : '比一比，聽聽差在哪裡'}
+            比一比，聽聽差在哪裡
           </div>
-          <div style={{display:'grid',gridTemplateColumns: (!isIOS && audioUrl) ? '1fr 1fr' : '1fr',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns: '1fr 1fr',gap:10}}>
+            
             {/* 老師聲音 */}
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:11,fontWeight:800,color:ACD,marginBottom:6,
@@ -658,26 +694,55 @@ function App() {
                 播放
               </button>
             </div>
-            {/* 學生聲音 (iPad 模式下隱藏) */}
-            {!isIOS && audioUrl && (
-              <div style={{textAlign:'center'}}>
-                <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
-                  background:'#d1fae5',padding:'3px 8px',borderRadius:999,display:'inline-block'}}>
-                  🎤 我說的
-                </div>
-                <audio src={audioUrl} controls playsInline
-                  style={{width:'100%',height:36,borderRadius:12}}/>
+
+            {/* 學生聲音 (依裝置提供不同介面) */}
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
+                background:'#d1fae5',padding:'3px 8px',borderRadius:999,display:'inline-block'}}>
+                {isIOS ? '🌟 我的專屬錄音' : '🎤 我說的'}
               </div>
-            )}
+              
+              {/* 【電腦/安卓】：直接顯示剛剛雙開錄好的音檔 */}
+              {!isIOS && audioUrl && (
+                <audio src={audioUrl} controls playsInline style={{width:'100%',height:36,borderRadius:12}}/>
+              )}
+              
+              {/* 【Apple 系統】：提供額外的「純錄音接力按鈕」 */}
+              {isIOS && (
+                <div style={{display:'flex', flexDirection:'column', gap:6}}>
+                  {/* 若已經手動錄好了，就顯示播放器 */}
+                  {audioUrl && <audio src={audioUrl} controls playsInline style={{width:'100%',height:36,borderRadius:12}}/>}
+                  
+                  {/* 未錄音，或已錄完但沒在錄的狀態 */}
+                  {iosRecState === 'idle' && (
+                    <button onClick={handleIosOnlyRecord} 
+                      style={{width:'100%', background:'#fff', color:'#059669', border:'2px solid #34d399', borderRadius:10, padding:'6px', fontWeight:900, fontSize:13, cursor:'pointer'}}>
+                      {audioUrl ? '🔄 重錄一次' : '🎤 錄下我的聲音'}
+                    </button>
+                  )}
+                  {/* 正在錄音中 */}
+                  {iosRecState === 'recording' && (
+                    <button onClick={handleIosOnlyRecord} className="pulse"
+                      style={{width:'100%', background:'#fef2f2', color:'#dc2626', border:'2px solid #f87171', borderRadius:10, padding:'6px', fontWeight:900, fontSize:13, cursor:'pointer'}}>
+                      ⏹️ 錄音中...點我停止
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
-        {/* 再說一次 */}
-        <button onClick={()=>{ setRecState('idle'); setAudioUrl(null); }}
+        {/* 再挑戰一次 (重新開啟 AI 評分) */}
+        <button onClick={()=>{ 
+            setRecState('idle'); 
+            setIosRecState('idle');
+            setAudioUrl(null); 
+          }}
           style={{width:'100%',background:'#fff',border:'3px solid #34d399',
             borderRadius:18,padding:'11px',fontWeight:900,fontSize:16,
             color:'#059669',cursor:'pointer'}}>
-          🎤 再挑戰一次
+          🎤 重新挑戰評分
         </button>
       </div>
     );
