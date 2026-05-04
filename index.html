@@ -11,89 +11,48 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin:0; padding:0; min-height:100%; }
     body {
       font-family: 'Nunito', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
-      background: linear-gradient(180deg, #e0f2fe 0%, #f0fdf4 100%);
+      background: linear-gradient(180deg,#e0f2fe 0%,#f0fdf4 100%);
       background-attachment: fixed;
       overflow-x: hidden;
     }
 
-    /* ── 動畫 ── */
-    @keyframes bob     { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-8px)} }
-    @keyframes ping    { 0%{transform:scale(1);opacity:1}  100%{transform:scale(2.2);opacity:0} }
-    @keyframes starPop { 0%{transform:scale(.3) rotate(-15deg);opacity:0} 70%{transform:scale(1.15) rotate(5deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
-    @keyframes slideUp { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
-    @keyframes waveBar { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1.3)} }
-    @keyframes hintIn  { from{transform:translate(-50%,-10px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
-    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+    @keyframes bob      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes starPop  { 0%{transform:scale(.3) rotate(-15deg);opacity:0} 70%{transform:scale(1.15) rotate(5deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
+    @keyframes ping     { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.2);opacity:0} }
+    @keyframes slideUp  { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes waveBar  { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1.3)} }
+    @keyframes hintIn   { from{transform:translate(-50%,-12px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
+    @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.5} }
 
-    .bob       { animation: bob 2s ease-in-out infinite; }
-    .star-pop  { animation: starPop .5s cubic-bezier(.175,.885,.32,1.275) forwards; }
-    .slide-up  { animation: slideUp .3s ease forwards; }
-    .wave-bar  { animation: waveBar .6s ease-in-out infinite; transform-origin: bottom; }
+    .bob      { animation: bob 2s ease-in-out infinite; }
+    .star-pop { animation: starPop .5s cubic-bezier(.175,.885,.32,1.275) forwards; }
+    .slide-up { animation: slideUp .3s ease forwards; }
+    .wave-bar { animation: waveBar .6s ease-in-out infinite; transform-origin:bottom; }
+    .pulse    { animation: pulse 1.5s ease-in-out infinite; }
 
-    /* ── 捲軸 ── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #bae6fd; border-radius: 10px; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#bae6fd; border-radius:10px; }
 
-    /* ── 逐字比對 ── */
-    .word-hit  { color:#059669; font-weight:900; background:#d1fae5; border-radius:5px; padding:0 4px; }
-    .word-miss { color:#dc2626; font-weight:900; background:#fee2e2; border-radius:5px; padding:0 4px; text-decoration:underline wavy #fca5a5; }
-    .word-skip { color:#9ca3af; background:#f3f4f6; border-radius:5px; padding:0 4px; }
-
-    /* ── 佈局工具 ── */
-    .flex     { display:flex; }
-    .flex-col { display:flex; flex-direction:column; }
-    .items-center  { align-items:center; }
-    .items-end     { align-items:flex-end; }
-    .justify-center { justify-content:center; }
-    .justify-between { justify-content:space-between; }
-    .flex-wrap  { flex-wrap:wrap; }
-    .flex-1     { flex:1; }
-    .gap-1  { gap:4px; }
-    .gap-2  { gap:8px; }
-    .gap-3  { gap:12px; }
-    .gap-4  { gap:16px; }
-    .gap-5  { gap:20px; }
-    .w-full { width:100%; }
-    .text-center { text-align:center; }
-    .text-right  { text-align:right; }
-    .relative { position:relative; }
-    .overflow-hidden { overflow:hidden; }
-    .overflow-y-auto { overflow-y:auto; }
-    .whitespace-pre-line { white-space:pre-line; }
-    .leading-snug  { line-height:1.35; }
-    .leading-loose { line-height:1.8; }
-    .pointer-events-none { pointer-events:none; }
-    .cursor-pointer { cursor:pointer; }
-
-    /* ── 通用按鈕基礎 ── */
     button { cursor:pointer; border:none; outline:none; font-family:inherit; }
     button:disabled { opacity:.35; cursor:default; }
 
-    /* ── 3D 按鈕 ── */
-    .btn-3d {
-      transition: box-shadow .08s, transform .08s;
-    }
-    .btn-3d:active {
-      box-shadow: 0 0px 0 var(--sh) !important;
-      transform: translateY(5px);
-    }
+    /* audio 播放列樣式 */
+    audio { width:100%; height:36px; border-radius:10px; }
+    audio::-webkit-media-controls-panel { background:#f0f9ff; }
 
-    /* ── 卡片 ── */
     .card {
       background:#fff;
       border-radius:28px;
-      box-shadow: 0 8px 32px rgba(56,189,248,.13);
+      box-shadow:0 8px 32px rgba(56,189,248,.13);
       overflow:hidden;
     }
-
-    /* ── 側邊欄 ── */
     .sidebar {
       position:fixed; inset-block:0; right:0;
       width:280px; max-width:88vw;
@@ -102,43 +61,32 @@
       box-shadow:-6px 0 32px rgba(0,0,0,.14);
       display:flex; flex-direction:column;
       z-index:50;
-      transition: transform .3s cubic-bezier(.25,.46,.45,.94);
+      transition:transform .3s cubic-bezier(.25,.46,.45,.94);
     }
     .sidebar.open  { transform:translateX(0); }
     .sidebar.close { transform:translateX(100%); }
-
-    /* ── 覆蓋層 ── */
     .overlay {
       position:fixed; inset:0;
       background:rgba(0,0,0,.4);
       backdrop-filter:blur(3px);
       z-index:40;
-      animation:overlayIn .2s ease;
     }
-
-    /* ── 浮動提示 ── */
     .hint-toast {
       position:fixed; top:18px; left:50%; z-index:60;
       background:#ef4444; color:#fff;
       padding:10px 20px; border-radius:999px;
       font-weight:800; font-size:14px;
       box-shadow:0 4px 16px rgba(239,68,68,.4);
-      display:flex; align-items:center; gap:8px;
       animation:hintIn .25s ease;
-      white-space:nowrap;
+      white-space:nowrap; pointer-events:none;
     }
-
-    /* ── 過關遮罩 ── */
     .star-overlay {
       position:fixed; inset:0; z-index:55;
       background:rgba(255,255,255,.96);
       display:flex; flex-direction:column;
       align-items:center; justify-content:center;
       pointer-events:none;
-      animation:overlayIn .15s ease;
     }
-
-    /* ── 進度條 ── */
     .progress-track {
       background:#bae6fd; border-radius:999px; height:14px;
       overflow:hidden; border:2px solid #93c5fd;
@@ -147,15 +95,22 @@
       height:100%; border-radius:999px; background:#facc15;
       transition:width .7s ease;
     }
+    .btn-3d {
+      transition:box-shadow .08s, transform .08s;
+    }
+    .btn-3d:active {
+      box-shadow:0 0px 0 var(--sh) !important;
+      transform:translateY(5px);
+    }
 
-    /* ── RWD ── */
-    @media(max-width:400px){
-      .grade-btn { padding:4px 8px; font-size:12px; }
-      .en-sentence { font-size:26px; }
+    /* 練習步驟指示 */
+    .step-dot {
+      width:10px; height:10px; border-radius:50%;
+      transition:all .3s;
     }
-    @media(min-width:401px){
-      .en-sentence { font-size:32px; }
-    }
+
+    @media(max-width:400px){ .en-sentence{font-size:24px;} }
+    @media(min-width:401px){ .en-sentence{font-size:30px;} }
   </style>
 </head>
 <body>
@@ -163,84 +118,84 @@
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
-/* ═══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    題庫
-═══════════════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 const ALL_DATA = {
   "1-1":{ title:"小一上", sentences:[
     {week:"1-2",  en:"Hello! / Hi!",         zh:"哈囉！ / 嗨！",   icon:"👋"},
-    {week:"3-4",  en:"Good morning.",         zh:"早安",            icon:"☀️"},
-    {week:"5-6",  en:"Good afternoon.",       zh:"午安",            icon:"🌤️"},
-    {week:"7-8",  en:"Look.",                 zh:"你看",            icon:"👀"},
-    {week:"9-10", en:"Line up, please.",      zh:"請排隊",          icon:"🧑‍🤝‍🧑"},
-    {week:"11-12",en:"Stand up.",             zh:"起立",            icon:"🧍"},
-    {week:"13-14",en:"Sit down.",             zh:"坐下",            icon:"🪑"},
+    {week:"3-4",  en:"Good morning.",         zh:"早安",             icon:"☀️"},
+    {week:"5-6",  en:"Good afternoon.",       zh:"午安",             icon:"🌤️"},
+    {week:"7-8",  en:"Look.",                 zh:"你看",             icon:"👀"},
+    {week:"9-10", en:"Line up, please.",      zh:"請排隊",           icon:"🧑‍🤝‍🧑"},
+    {week:"11-12",en:"Stand up.",             zh:"起立",             icon:"🧍"},
+    {week:"13-14",en:"Sit down.",             zh:"坐下",             icon:"🪑"},
     {week:"15-16",en:"Are you ready?",        zh:"準備好了嗎？",    icon:"👍"},
-    {week:"17-18",en:"Watch out!",            zh:"小心！",          icon:"⚠️"},
-    {week:"19-20",en:"Goodbye. / See you.",   zh:"再見",            icon:"👋"},
+    {week:"17-18",en:"Watch out!",            zh:"小心！",           icon:"⚠️"},
+    {week:"19-20",en:"Goodbye. / See you.",   zh:"再見",             icon:"👋"},
   ]},
   "1-2":{ title:"小一下", sentences:[
-    {week:"1-2",  en:"Thank you!",            zh:"謝謝！",          icon:"🙏"},
-    {week:"3-4",  en:"You're welcome.",       zh:"不客氣",          icon:"😊"},
-    {week:"5-6",  en:"Come here.",            zh:"過來這裡",        icon:"🙋"},
-    {week:"7-8",  en:"Stop!",                 zh:"停",              icon:"🛑"},
-    {week:"9-10", en:"Raise your hand.",      zh:"舉手",            icon:"✋"},
-    {week:"11-12",en:"Put down your hand.",   zh:"手放下",          icon:"👇"},
-    {week:"13-14",en:"I'm sorry.",            zh:"對不起",          icon:"🥺"},
-    {week:"15-16",en:"It's OK.",              zh:"沒關係",          icon:"👌"},
-    {week:"17-18",en:"Good job.",             zh:"做得好",          icon:"🌟"},
-    {week:"19-20",en:"Try again.",            zh:"再試一次",        icon:"💪"},
+    {week:"1-2",  en:"Thank you!",            zh:"謝謝！",           icon:"🙏"},
+    {week:"3-4",  en:"You're welcome.",       zh:"不客氣",           icon:"😊"},
+    {week:"5-6",  en:"Come here.",            zh:"過來這裡",         icon:"🙋"},
+    {week:"7-8",  en:"Stop!",                 zh:"停",               icon:"🛑"},
+    {week:"9-10", en:"Raise your hand.",      zh:"舉手",             icon:"✋"},
+    {week:"11-12",en:"Put down your hand.",   zh:"手放下",           icon:"👇"},
+    {week:"13-14",en:"I'm sorry.",            zh:"對不起",           icon:"🥺"},
+    {week:"15-16",en:"It's OK.",              zh:"沒關係",           icon:"👌"},
+    {week:"17-18",en:"Good job.",             zh:"做得好",           icon:"🌟"},
+    {week:"19-20",en:"Try again.",            zh:"再試一次",         icon:"💪"},
   ]},
   "2-1":{ title:"小二上", sentences:[
-    {week:"1-2",  en:"How are you?",          zh:"你好嗎？",        icon:"😃"},
+    {week:"1-2",  en:"How are you?",          zh:"你好嗎？",         icon:"😃"},
     {week:"3-4",  en:"What's your name?",     zh:"你叫什麼名字？",  icon:"📛"},
-    {week:"5-6",  en:"Happy birthday!",       zh:"生日快樂！",      icon:"🎂"},
+    {week:"5-6",  en:"Happy birthday!",       zh:"生日快樂！",       icon:"🎂"},
     {week:"7-8",  en:"How old are you?\nI'm eight years old.", zh:"你幾歲？\n我八歲。", icon:"8️⃣"},
-    {week:"9-10", en:"Happy Halloween!",      zh:"萬聖節快樂！",    icon:"🎃"},
+    {week:"9-10", en:"Happy Halloween!",      zh:"萬聖節快樂！",     icon:"🎃"},
     {week:"11-12",en:"Let's go trick-or-treating.", zh:"不給糖就搗蛋", icon:"🍬"},
     {week:"13-14",en:"What's this / that?",   zh:"這/那是甚麼？",   icon:"❓"},
     {week:"15-16",en:"It's an eraser.",       zh:"這是一塊橡皮擦。",icon:"✏️"},
     {week:"17-18",en:"What color is it?",     zh:"它是什麼顏色？",  icon:"🎨"},
-    {week:"19-20",en:"It's green.",           zh:"它是綠色。",      icon:"🟩"},
+    {week:"19-20",en:"It's green.",           zh:"它是綠色。",       icon:"🟩"},
   ]},
   "2-2":{ title:"小二下", sentences:[
-    {week:"1-2",  en:"Try again.",            zh:"再試一次。",      icon:"💪"},
-    {week:"3-4",  en:"Louder, please.",       zh:"請大聲一點。",    icon:"📢"},
-    {week:"5-6",  en:"Let me see it.",        zh:"讓我看看。",      icon:"👀"},
-    {week:"7-8",  en:"That's right.",         zh:"沒錯。",          icon:"✅"},
-    {week:"9-10", en:"Happy Mother's Day.",   zh:"母親節快樂。",    icon:"💐"},
-    {week:"11-12",en:"This is for you.",      zh:"這是給你的。",    icon:"🎁"},
+    {week:"1-2",  en:"Try again.",            zh:"再試一次。",       icon:"💪"},
+    {week:"3-4",  en:"Louder, please.",       zh:"請大聲一點。",     icon:"📢"},
+    {week:"5-6",  en:"Let me see it.",        zh:"讓我看看。",       icon:"👀"},
+    {week:"7-8",  en:"That's right.",         zh:"沒錯。",           icon:"✅"},
+    {week:"9-10", en:"Happy Mother's Day.",   zh:"母親節快樂。",     icon:"💐"},
+    {week:"11-12",en:"This is for you.",      zh:"這是給你的。",     icon:"🎁"},
     {week:"13-14",en:"Is it a rabbit?",       zh:"它是一隻兔子嗎？",icon:"🐇"},
-    {week:"15-16",en:"No, it isn't.",         zh:"不，它不是。",    icon:"🙅"},
-    {week:"17-18",en:"How about you?",        zh:"那你呢？",        icon:"🫵"},
-    {week:"19-20",en:"Me, too.",              zh:"我也是。",        icon:"🙋"},
+    {week:"15-16",en:"No, it isn't.",         zh:"不，它不是。",     icon:"🙅"},
+    {week:"17-18",en:"How about you?",        zh:"那你呢？",         icon:"🫵"},
+    {week:"19-20",en:"Me, too.",              zh:"我也是。",         icon:"🙋"},
   ]},
   "3-1":{ title:"小三上", sentences:[
-    {week:"1-2",  en:"Are you OK?",           zh:"你還好嗎？",      icon:"🤕"},
+    {week:"1-2",  en:"Are you OK?",           zh:"你還好嗎？",       icon:"🤕"},
     {week:"3-4",  en:"Nice to meet you.",     zh:"很高興見到你。",  icon:"🤝"},
-    {week:"5-6",  en:"I don't know.",         zh:"我不知道。",      icon:"🤷"},
-    {week:"7-8",  en:"Can you swim?",         zh:"你會游泳嗎？",    icon:"🏊"},
-    {week:"9-10", en:"Help!",                 zh:"救命啊！",        icon:"🆘"},
-    {week:"11-12",en:"Of course.",            zh:"當然。",          icon:"💯"},
+    {week:"5-6",  en:"I don't know.",         zh:"我不知道。",       icon:"🤷"},
+    {week:"7-8",  en:"Can you swim?",         zh:"你會游泳嗎？",     icon:"🏊"},
+    {week:"9-10", en:"Help!",                 zh:"救命啊！",         icon:"🆘"},
+    {week:"11-12",en:"Of course.",            zh:"當然。",           icon:"💯"},
     {week:"13-14",en:"Yummy!\nYuck!",         zh:"好吃！\n不好吃！",icon:"😋"},
-    {week:"15-16",en:"Hurry up!",             zh:"快一點！",        icon:"🏃"},
-    {week:"17-18",en:"Here you are.",         zh:"這個給你。",      icon:"🤲"},
-    {week:"19-20",en:"Happy Moon Festival.",  zh:"中秋節快樂！",    icon:"🌕"},
+    {week:"15-16",en:"Hurry up!",             zh:"快一點！",         icon:"🏃"},
+    {week:"17-18",en:"Here you are.",         zh:"這個給你。",       icon:"🤲"},
+    {week:"19-20",en:"Happy Moon Festival.",  zh:"中秋節快樂！",     icon:"🌕"},
   ]},
   "3-2":{ title:"小三下", sentences:[
-    {week:"1-2",  en:"Time for lunch.",       zh:"午餐時間到囉",    icon:"🍱"},
-    {week:"3-4",  en:"Hooray!",               zh:"太棒了！",        icon:"🎉"},
-    {week:"5-6",  en:"Take a rest.",          zh:"休息一下",        icon:"🛋️"},
-    {week:"7-8",  en:"Come and join us.",     zh:"加入我們吧",      icon:"🤝"},
-    {week:"9-10", en:"Wake up!",              zh:"醒來！",          icon:"⏰"},
-    {week:"11-12",en:"Wait.",                 zh:"等一下",          icon:"✋"},
-    {week:"13-14",en:"It's here.",            zh:"它在這裡",        icon:"📍"},
-    {week:"15-16",en:"It's over there.",      zh:"它在那裡",        icon:"👉"},
-    {week:"17-18",en:"I'm ready.",            zh:"我準備好了",      icon:"🚀"},
-    {week:"19-20",en:"Happy Easter.",         zh:"復活節快樂",      icon:"🐰"},
+    {week:"1-2",  en:"Time for lunch.",       zh:"午餐時間到囉",     icon:"🍱"},
+    {week:"3-4",  en:"Hooray!",               zh:"太棒了！",         icon:"🎉"},
+    {week:"5-6",  en:"Take a rest.",          zh:"休息一下",         icon:"🛋️"},
+    {week:"7-8",  en:"Come and join us.",     zh:"加入我們吧",       icon:"🤝"},
+    {week:"9-10", en:"Wake up!",              zh:"醒來！",           icon:"⏰"},
+    {week:"11-12",en:"Wait.",                 zh:"等一下",           icon:"✋"},
+    {week:"13-14",en:"It's here.",            zh:"它在這裡",         icon:"📍"},
+    {week:"15-16",en:"It's over there.",      zh:"它在那裡",         icon:"👉"},
+    {week:"17-18",en:"I'm ready.",            zh:"我準備好了",       icon:"🚀"},
+    {week:"19-20",en:"Happy Easter.",         zh:"復活節快樂",       icon:"🐰"},
   ]},
   "4-1":{ title:"小四上", sentences:[
-    {week:"1-2",  en:"I'm under the weather.",     zh:"我身體不舒服",     icon:"🤒"},
+    {week:"1-2",  en:"I'm under the weather.",      zh:"我身體不舒服",     icon:"🤒"},
     {week:"3-4",  en:"Have a good time.",           zh:"祝你玩得開心",     icon:"🥳"},
     {week:"5-6",  en:"Follow me, please.",          zh:"請跟我來",         icon:"🚶"},
     {week:"7-8",  en:"Hold your horses.",           zh:"別著急",           icon:"🐴"},
@@ -264,40 +219,40 @@ const ALL_DATA = {
     {week:"19-20",en:"Don't be a couch potato.",    zh:"不要當電視迷",     icon:"🥔"},
   ]},
   "5-1":{ title:"小五上", sentences:[
-    {week:"1-2",  en:"Where are you from?",         zh:"你來自哪裡？",    icon:"🌍"},
-    {week:"3-4",  en:"Excuse me.",                  zh:"不好意思",        icon:"🙇"},
-    {week:"5-6",  en:"Can you help me?",            zh:"你能幫幫我嗎？",  icon:"🤝"},
-    {week:"7-8",  en:"Amazing!",                    zh:"了不起！",        icon:"🤯"},
-    {week:"9-10", en:"Follow me!",                  zh:"跟我來！",        icon:"👣"},
-    {week:"11-12",en:"Well done.",                  zh:"做得好",          icon:"👏"},
-    {week:"13-14",en:"Really?",                     zh:"真的嗎？",        icon:"🤨"},
-    {week:"15-16",en:"Thanks a lot.",               zh:"非常感謝",        icon:"🙏"},
-    {week:"17-18",en:"Come on!",                    zh:"加油！",          icon:"📣"},
-    {week:"19-20",en:"Happy New Year.",             zh:"新年快樂",        icon:"🎆"},
+    {week:"1-2",  en:"Where are you from?",         zh:"你來自哪裡？",     icon:"🌍"},
+    {week:"3-4",  en:"Excuse me.",                 zh:"不好意思",         icon:"🙇"},
+    {week:"5-6",  en:"Can you help me?",           zh:"你能幫幫我嗎？",   icon:"🤝"},
+    {week:"7-8",  en:"Amazing!",                   zh:"了不起！",         icon:"🤯"},
+    {week:"9-10", en:"Follow me!",                 zh:"跟我來！",         icon:"👣"},
+    {week:"11-12",en:"Well done.",                 zh:"做得好",           icon:"👏"},
+    {week:"13-14",en:"Really?",                    zh:"真的嗎？",         icon:"🤨"},
+    {week:"15-16",en:"Thanks a lot.",               zh:"非常感謝",         icon:"🙏"},
+    {week:"17-18",en:"Come on!",                   zh:"加油！",           icon:"📣"},
+    {week:"19-20",en:"Happy New Year.",             zh:"新年快樂",         icon:"🎆"},
   ]},
   "5-2":{ title:"小五下", sentences:[
     {week:"1-2",  en:"What did you do last night?", zh:"你昨晚做了什麼事？",icon:"🌙"},
     {week:"3-4",  en:"Are you kidding?",            zh:"你在開玩笑嗎？",  icon:"🤪"},
-    {week:"5-6",  en:"Seeing is believing.",        zh:"眼見為憑",        icon:"👀"},
-    {week:"7-8",  en:"It's a long story.",          zh:"說來話長",        icon:"📖"},
-    {week:"9-10", en:"Here we go.",                 zh:"走吧！",          icon:"🎬"},
-    {week:"11-12",en:"Time is money.",              zh:"時間就是金錢",    icon:"⏳"},
-    {week:"13-14",en:"How much is it?",             zh:"這多少錢？",      icon:"💵"},
-    {week:"15-16",en:"Take a look.",                zh:"看一看",          icon:"🔎"},
-    {week:"17-18",en:"Oh, poor you.",               zh:"哦，你好可憐",    icon:"🥺"},
+    {week:"5-6",  en:"Seeing is believing.",        zh:"眼見為憑",         icon:"👀"},
+    {week:"7-8",  en:"It's a long story.",          zh:"說來話長",         icon:"📖"},
+    {week:"9-10", en:"Here we go.",                 zh:"走吧！",           icon:"🎬"},
+    {week:"11-12",en:"Time is money.",              zh:"時間就是金錢",     icon:"⏳"},
+    {week:"13-14",en:"How much is it?",             zh:"這多少錢？",       icon:"💵"},
+    {week:"15-16",en:"Take a look.",                zh:"看一看",           icon:"🔎"},
+    {week:"17-18",en:"Oh, poor you.",               zh:"哦，你好可憐",     icon:"🥺"},
     {week:"19-20",en:"Dance with me!",              zh:"跟我一起跳舞吧！",icon:"💃"},
   ]},
   "6-1":{ title:"小六上", sentences:[
-    {week:"1-2",  en:"Have a good time.",                   zh:"祝您玩得愉快！",      icon:"🎉"},
+    {week:"1-2",  en:"Have a good time.",                    zh:"祝您玩得愉快！",       icon:"🎉"},
     {week:"3-4",  en:"Taiwan is famous for its bubble tea.",zh:"台灣以珍珠奶茶聞名。",icon:"🧋"},
-    {week:"5-6",  en:"What did you do at school?",          zh:"你在學校做了什麼事情？",icon:"🏫"},
-    {week:"7-8",  en:"What happened?",                      zh:"發生什麼事了？",      icon:"😧"},
-    {week:"9-10", en:"I feel dizzy.",                        zh:"我頭暈",             icon:"😵"},
-    {week:"11-12",en:"Wait a second.",                      zh:"等一下",              icon:"⏱️"},
-    {week:"13-14",en:"What would you like for dinner?",     zh:"你晚餐想要吃什麼？", icon:"🍽️"},
-    {week:"15-16",en:"I could eat a horse.",                zh:"我餓極了",            icon:"🐴"},
-    {week:"17-18",en:"When is your birthday?",              zh:"你的生日是何時呢？",  icon:"🎂"},
-    {week:"19-20",en:"Take a guess.",                       zh:"猜一猜",              icon:"🤔"},
+    {week:"5-6",  en:"What did you do at school?",           zh:"你在學校做了什麼事情？",icon:"🏫"},
+    {week:"7-8",  en:"What happened?",                       zh:"發生什麼事了？",       icon:"😧"},
+    {week:"9-10", en:"I feel dizzy.",                        zh:"我頭暈",              icon:"😵"},
+    {week:"11-12",en:"Wait a second.",                       zh:"等一下",              icon:"⏱️"},
+    {week:"13-14",en:"What would you like for dinner?",     zh:"你晚餐想要吃什麼？",   icon:"🍽️"},
+    {week:"15-16",en:"I could eat a horse.",                 zh:"我餓極了",             icon:"🐴"},
+    {week:"17-18",en:"When is your birthday?",               zh:"你的生日是何時呢？",   icon:"🎂"},
+    {week:"19-20",en:"Take a guess.",                        zh:"猜一猜",              icon:"🤔"},
   ]},
   "6-2":{ title:"小六下", sentences:[
     {week:"1-2",  en:"What time did you watch a movie yesterday?",zh:"昨天何時看電影？",icon:"🎬"},
@@ -315,519 +270,485 @@ const ALL_DATA = {
 
 const LOW  = ['1-1','1-2','2-1','2-2','3-1','3-2'];
 const HIGH = ['4-1','4-2','5-1','5-2','6-1','6-2'];
-const INIT_COMPLETED = Object.keys(ALL_DATA).reduce((a,k)=>({...a,[k]:[]}),{});
-const STOP = new Set(['a','an','the','is','it','in','on','at','to','i','be','of','s','re','ve','ll','m','t']);
 
-/* ═══════════════════════════════════════════════════
-   語音工具
-═══════════════════════════════════════════════════ */
-const hasChinese = t => /[\u4e00-\u9fff\u3400-\u4dbf]/.test(t);
-
-const isEnglish = t => {
-  if (!t?.trim() || hasChinese(t)) return false;
-  const letters = t.replace(/[^a-zA-Z]/g,'').length;
-  const total   = t.replace(/\s/g,'').length;
-  return total > 0 && letters/total >= 0.45;
+const STORAGE_KEY = 'jm_practice_counts';
+const loadCounts = () => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(e){ return {}; }
+};
+const saveCounts = (c) => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(c)); } catch(e){}
 };
 
-const tokenize = t => t.toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(w=>w.length>0);
+// 🌟 核心防護機制：偵測是否為 Apple iPad/iPhone
+// iPadOS 13 之後會偽裝成 MacIntel，所以需要檢查 maxTouchPoints
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-const compareWords = (transcript, targetEn) => {
-  const rec = new Set(tokenize(transcript));
-  return tokenize(targetEn).map(word => ({ word, isStop: STOP.has(word), hit: rec.has(word) }));
-};
+/* ═══════════════════════════════════════════════
+   強化版 AI 口說評分大腦 (結合語音清洗、防作弊、評分)
+═══════════════════════════════════════════════ */
+const calcSimilarity = (transcript, targetEn) => {
+  const cleanText = (str) => {
+    return str.toLowerCase()
+              .replace(/’/g, "'") 
+              .replace(/'s\b/g, ' is')
+              .replace(/'m\b/g, ' am')
+              .replace(/n't\b/g, ' not')
+              .replace(/'re\b/g, ' are')
+              .replace(/'ll\b/g, ' will')
+              .replace(/'ve\b/g, ' have')
+              .replace(/[^a-z\s]/g, ' ') 
+              .split(/\s+/)
+              .filter(w => w.length > 0); 
+  };
+  
+  const transWords = cleanText(transcript);
+  const options = targetEn.split('/');
+  let maxSim = 0;
 
-const calcScore = comp => {
-  const keys = comp.filter(w=>!w.isStop);
-  return keys.length ? keys.filter(w=>w.hit).length / keys.length : 1;
-};
-
-/* ═══════════════════════════════════════════════════
-   iOS SpeechRecognition 管理器
-═══════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════
-   音訊錄製管理器（提供回放功能）
-═══════════════════════════════════════════════════ */
-class AudioRecorder {
-  constructor(){ this.mr=null; this.chunks=[]; this.url=null; }
-
-  async start(stream){
-    this.chunks=[];
-    if(this.url){ URL.revokeObjectURL(this.url); this.url=null; }
-    // 選擇 iOS 支援的格式
-    const mime = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
-               : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
-               : '';
-    this.mr = new MediaRecorder(stream, mime ? {mimeType:mime} : {});
-    this.mr.ondataavailable = e=>{ if(e.data.size>0) this.chunks.push(e.data); };
-    this.mr.start();
-  }
-
-  stop(){
-    return new Promise(resolve=>{
-      if(!this.mr){ resolve(null); return; }
-      this.mr.onstop = ()=>{
-        const blob = new Blob(this.chunks);
-        this.url = URL.createObjectURL(blob);
-        resolve(this.url);
-      };
-      try{ this.mr.stop(); }catch(e){ resolve(null); }
-    });
-  }
-
-  abort(){
-    if(this.mr){ try{ this.mr.stop(); }catch(e){} this.mr=null; }
-    this.chunks=[];
-  }
-}
-const AR = new AudioRecorder();
-
-/* ═══════════════════════════════════════════════════
-   iOS SpeechRecognition 管理器
-═══════════════════════════════════════════════════ */
-class SpeechManager {
-  constructor(){
-    this.r=null; this.active=false; this.timer=null; this.gotResult=false;
-    this.stream=null; // 保留 MediaStream 供 AudioRecorder 共用
-    this.silentRetries=0; // 自動靜默重試計數
-    this.MAX_SILENT=2;    // 最多自動重試 2 次再顯示提示
-  }
-
-  supported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
-
-  _clean(){
-    if(this.timer){ clearTimeout(this.timer); this.timer=null; }
-    if(this.r){
-      try{ this.r.onresult=this.r.onerror=this.r.onend=this.r.onstart=null; this.r.abort(); }catch(e){}
-      this.r=null;
-    }
-    this.active=false;
-    this.gotResult=false;
-  }
-
-  _releaseStream(){
-    if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; }
-  }
-
-  async start({ onResult, onError, onEnd, onNoResult, onRetrying, timeout=7000 }){
-    this._clean();
-
-    // 先取得麥克風權限並同時啟動錄音
-    try{
-      this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
-      await AR.start(this.stream);
-    }catch(e){
-      this._releaseStream();
-      onError({code:'permission', msg:'請允許麥克風權限後再試！'});
-      return;
-    }
-
-    const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
-    const r  = new SR();
-    this.r   = r;
-    r.lang='en-US'; r.interimResults=false; r.maxAlternatives=5; r.continuous=false;
-
-    r.onstart = ()=>{ this.active=true; this.gotResult=false; };
-
-    r.onresult = ev => {
-      clearTimeout(this.timer);
-      this.gotResult = true;
-      this.silentRetries = 0;
-      const list = Array.from(ev.results[0]).map(a=>a.transcript.trim());
-      // 先停止 MediaRecorder，拿到音訊 URL 後一起回傳
-      AR.stop().then(audioUrl=>{
-        this._releaseStream();
-        onResult(list, audioUrl);
-      });
-    };
-
-    r.onerror = ev => {
-      clearTimeout(this.timer);
-      const MAP = {
-        'not-allowed':        {code:'permission', msg:'請允許麥克風權限後再試！'},
-        'audio-capture':      {code:'no-mic',     msg:'找不到麥克風，請檢查裝置設定。'},
-        'network':            {code:'network',     msg:null},
-        'no-speech':          {code:'silence',     msg:null},
-        'aborted':            {code:'aborted',     msg:null},
-        'service-not-allowed':{code:'permission',  msg:'語音服務未開放，請確認 Safari 設定。'},
-      };
-      const e = MAP[ev.error]||{code:'unknown', msg:'辨識時發生問題，請再試一次。'};
-      AR.abort(); this._clean(); this._releaseStream();
-      onError(e);
-    };
-
-    r.onend = ()=>{
-      clearTimeout(this.timer);
-      const wasActive = this.active;
-      const hadResult = this.gotResult;
-      this._clean();
-
-      if(wasActive && !hadResult){
-        // 沒拿到結果：先嘗試自動靜默重試，避免打擾學生
-        if(this.silentRetries < this.MAX_SILENT){
-          this.silentRetries++;
-          AR.abort();
-          this._releaseStream();
-          onRetrying(this.silentRetries);  // 通知 UI 顯示「再聽一次...」
-          setTimeout(()=> this.start({onResult,onError,onEnd,onNoResult,onRetrying,timeout}), 600);
-        } else {
-          // 重試都失敗才回傳 onNoResult
-          this.silentRetries = 0;
-          AR.abort(); this._releaseStream();
-          onNoResult();
-        }
-      } else {
-        onEnd();
+  options.forEach(opt => {
+    const targetWords = cleanText(opt);
+    if (targetWords.length === 0 || transWords.length === 0) return;
+    
+    let matches = 0;
+    let transWordsCopy = [...transWords];
+    
+    targetWords.forEach(w => {
+      const idx = transWordsCopy.indexOf(w);
+      if (idx !== -1) {
+        matches++;
+        transWordsCopy.splice(idx, 1);
       }
-    };
-
-    try{
-      r.start();
-      this.timer = setTimeout(()=>{ try{ this.r?.stop(); }catch(e){} }, timeout);
-    }catch(e){
-      AR.abort(); this._clean(); this._releaseStream();
-      onError({code:'start-fail', msg:'無法啟動麥克風，請重新整理頁面。'});
+    });
+    
+    let lengthPenalty = 1;
+    if (transWords.length > targetWords.length * 2) {
+      lengthPenalty = (targetWords.length * 2) / transWords.length;
     }
-  }
 
-  stop(){ try{ this.r?.stop(); }catch(e){} }
+    const sim = (matches / targetWords.length) * lengthPenalty;
+    if (sim > maxSim) maxSim = sim;
+  });
+  
+  return maxSim;
+};
 
-  abort(){
-    AR.abort();
-    this._clean();
-    this._releaseStream();
-    this.silentRetries=0;
+/* ═══════════════════════════════════════════════
+   MediaRecorder 錄音音檔建立 (供回放使用)
+═══════════════════════════════════════════════ */
+async function startRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const CANDIDATES = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+  const mime = CANDIDATES.find(m => {
+    try { return MediaRecorder.isTypeSupported(m); } catch(e){ return false; }
+  }) || '';
+
+  let mr;
+  try {
+    mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  } catch(e) {
+    mr = new MediaRecorder(stream);
   }
+  const actualMime = mr.mimeType || mime || 'audio/mp4';
+
+  const chunks = [];
+  mr.ondataavailable = e => { if(e.data && e.data.size > 0) chunks.push(e.data); };
+  mr.start();
+
+  return {
+    stop: () => new Promise(resolve => {
+      let dataReady = false;
+      let stopReady = false;
+
+      const tryResolve = () => {
+        if(!dataReady || !stopReady) return;
+        stream.getTracks().forEach(t => t.stop());
+        if(chunks.length === 0){ resolve(null); return; }
+        const blob = new Blob(chunks, { type: actualMime });
+        resolve(URL.createObjectURL(blob));
+      };
+
+      mr.ondataavailable = e => {
+        if(e.data && e.data.size > 0) chunks.push(e.data);
+        dataReady = true;
+        tryResolve();
+      };
+      mr.onstop = () => {
+        stopReady = true;
+        tryResolve();
+      };
+      try { mr.stop(); } catch(e) {
+        stream.getTracks().forEach(t => t.stop());
+        resolve(null);
+      }
+    }),
+    abort: () => {
+      try { if(mr.state !== 'inactive') mr.stop(); } catch(e) {}
+      stream.getTracks().forEach(t => t.stop());
+    }
+  };
 }
-const SM = new SpeechManager();
 
-/* ═══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    主元件
-═══════════════════════════════════════════════════ */
-function App(){
-  const [grade,setGrade]       = useState('1-1');
-  const [idx,setIdx]           = useState(0);
-  const [completed,setCompleted] = useState(INIT_COMPLETED);
-  const [rate,setRate]         = useState(0.85);
-  const [sidebar,setSidebar]   = useState(false);
-  const [starAnim,setStarAnim] = useState(false);
-  const [listened,setListened] = useState(false);
-  const [hint,setHint]         = useState('');
-  const [recStatus,setRecStatus] = useState('idle');
-  const [comparison,setComparison] = useState([]);
-  const [errMsg,setErrMsg]     = useState('');
-  const [retries,setRetries]   = useState(0);
-  const [audioUrl,setAudioUrl] = useState(null);   // 學生說話的錄音 URL
-  const [retrying,setRetrying] = useState(0);      // 靜默重試次數（顯示用）
-  const MAX_RETRY = 1;
+═══════════════════════════════════════════════ */
+function App() {
+  const [grade, setGrade]     = useState('1-1');
+  const [idx, setIdx]         = useState(0);
+  const [rate, setRate]       = useState(0.85);
+  const [sidebar, setSidebar] = useState(false);
+  const [starAnim, setStarAnim] = useState(false);
+  const [hint, setHint]       = useState('');
+  const [counts, setCounts]   = useState(loadCounts);
+  
+  // 錄音與 AI 評分狀態: 'idle' | 'recording' | 'processing' | 'done'
+  const [recState, setRecState] = useState('idle');
+  const [audioUrl, setAudioUrl] = useState(null);
+  
+  // AI 評分相關狀態
+  const [aiScore, setAiScore]   = useState(0);
+  const [aiStatus, setAiStatus] = useState('idle'); // 'success', 'fail_language', 'fail_unclear'
+  const isAiSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  const recorderRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const transcriptRef = useRef(""); 
 
   const sentences = ALL_DATA[grade].sentences;
   const cur       = sentences[idx];
-  const doneList  = completed[grade];
-  const isDone    = doneList.includes(idx);
-  const progress  = Math.round(doneList.length/sentences.length*100);
-  const isHigh    = HIGH.includes(grade);
+  const countKey  = `${grade}-${idx}`;
+  const practiced = counts[countKey] || 0;
+  
+  const doneSet   = Object.keys(counts).filter(k => k.startsWith(grade+'-') && (counts[k]||0) >= 1);
+  const progress  = Math.round(doneSet.length / sentences.length * 100);
 
-  // 主題色
+  const isHigh = HIGH.includes(grade);
   const AC  = isHigh ? '#10b981' : '#0ea5e9';
   const ACD = isHigh ? '#059669' : '#0284c7';
   const ACL = isHigh ? '#d1fae5' : '#e0f2fe';
-  const ACB = isHigh ? '#059669' : '#1d4ed8'; // 3d shadow
+  const ACB = isHigh ? '#059669' : '#1d4ed8';
 
-  useEffect(()=>{
-    setListened(false); setHint(''); setRecStatus('idle');
-    setComparison([]); setErrMsg(''); setRetries(0);
-    setAudioUrl(null); setRetrying(0);
-    SM.abort();
-  },[idx,grade]);
+  // 切換題目時重置狀態
+  useEffect(() => {
+    if(recorderRef.current) { recorderRef.current.abort(); recorderRef.current=null; }
+    if(recognitionRef.current) { try{ recognitionRef.current.abort(); }catch(e){} }
+    setRecState('idle');
+    setAiStatus('idle');
+    if(audioUrl){ URL.revokeObjectURL(audioUrl); }
+    setAudioUrl(null);
+  }, [idx, grade]);
 
-  useEffect(()=>()=>SM.abort(),[]);
+  useEffect(() => () => {
+    if(recorderRef.current) recorderRef.current.abort();
+    if(recognitionRef.current) { try{ recognitionRef.current.abort(); }catch(e){} }
+  }, []);
 
-  const showHint = msg => { setHint(msg); setTimeout(()=>setHint(''),3500); };
+  const showHint = msg => { setHint(msg); setTimeout(()=>setHint(''), 3000); };
 
   /* TTS */
-  const speak = useCallback(text=>{
-    setListened(true); setHint('');
+  const speak = useCallback(text => {
     if(!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text.replace(/\n/g,' '));
     u.lang='en-US'; u.rate=rate; u.pitch=1.1;
     window.speechSynthesis.speak(u);
-  },[rate]);
+  }, [rate]);
 
-  /* 錄音 */
-  const doRecord = useCallback((auto=false)=>{
-    if(!listened && !auto){ showHint('小提示：要先點「聽聽看」喔！'); return; }
-    if(!SM.supported()){ setRecStatus('no_support'); return; }
-    if(recStatus==='recording'){ SM.stop(); return; }
+  /* 雙效合併：點擊錄音/停止按鈕 */
+  const handleRecord = async () => {
+    // 🛑 停止錄音與開始評分處理
+    if(recState === 'recording') {
+      setRecState('processing');
+      
+      if(recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch(e){}
+      }
 
-    setRecStatus('recording'); setComparison([]); setErrMsg('');
+      let url = null;
+      if(recorderRef.current) {
+        try { url = await recorderRef.current.stop(); } catch(e){}
+        recorderRef.current = null;
+      }
+      setAudioUrl(url);
 
-    setRetrying(0);
+      // 給予一點緩衝時間讓 Web Speech API 的結果更新完畢
+      setTimeout(() => {
+         let finalScore = 0;
+         let currentAiStatus = 'idle';
 
-    SM.start({
-      timeout: 7000,
+         if (isAiSupported) {
+             const txt = transcriptRef.current || "";
+             console.log("🗣️ AI 聽到的字:", txt);
+             
+             if (!txt) {
+                 currentAiStatus = 'fail_unclear';
+             } else if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(txt)) {
+                 currentAiStatus = 'fail_language'; 
+             } else {
+                 const letters = txt.replace(/[^a-zA-Z]/g, '').length;
+                 const total = txt.replace(/\s/g, '').length;
+                 
+                 if (total > 0 && letters / total >= 0.3) {
+                     const sim = calcSimilarity(txt, cur.en);
+                     finalScore = Math.round(sim * 100);
+                     if (sim >= 0.5) currentAiStatus = 'success';
+                     else currentAiStatus = 'fail_unclear';
+                 } else {
+                     currentAiStatus = 'fail_unclear';
+                 }
+             }
+             setAiScore(finalScore);
+             setAiStatus(currentAiStatus);
+         } else {
+             currentAiStatus = 'success'; 
+         }
 
-      // onResult 現在多帶一個 audioUrl（MediaRecorder 錄下的音訊）
-      onResult:(list, url)=>{
-        setRetries(0); setRetrying(0);
-        setAudioUrl(url);   // 存下讓學生可以回放
+         setRecState('done');
 
-        // 只有全部候選都是中文才判中文
-        if(list.length > 0 && list.every(hasChinese)){ setRecStatus('fail_lang'); return; }
+         if (currentAiStatus === 'success') {
+             const next = practiced + 1;
+             const newCounts = { ...counts, [countKey]: next };
+             setCounts(newCounts);
+             saveCounts(newCounts);
+             if (practiced === 0) {
+                 setStarAnim(true);
+                 setTimeout(() => setStarAnim(false), 1600);
+             }
+         }
+      }, 600); 
+      return;
+    }
 
-        let bestComp=[], bestScore=-1;
-        for(const t of list){
-          if(!isEnglish(t)) continue;
-          const c=compareWords(t,cur.en), s=calcScore(c);
-          if(s>bestScore){ bestScore=s; bestComp=c; }
-        }
-        if(bestScore<0){ setRecStatus('fail_unclear'); return; }
+    // 🎙️ 開始錄音前檢查
+    if(!isAiSupported && !navigator.mediaDevices?.getUserMedia) {
+      showHint('這個裝置不支援錄音功能');
+      return;
+    }
+    
+    try {
+      transcriptRef.current = ""; 
+      
+      // 1. 同步啟動 AI 語音辨識 (避免 iOS 等待 await 導致丟失授權)
+      if(isAiSupported) {
+         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+         const recognition = new SR();
+         recognition.lang = 'en-US';
+         recognition.interimResults = true; 
+         recognition.onresult = (e) => {
+             let finalStr = "";
+             for(let i=0; i<e.results.length; i++){
+                 finalStr += e.results[i][0].transcript + " ";
+             }
+             transcriptRef.current = finalStr.trim();
+         };
+         recognitionRef.current = recognition;
+         try { recognition.start(); } catch(err){}
+      }
 
-        setComparison(bestComp);
-        if(bestScore>=0.5)      setRecStatus('success');
-        else if(bestScore>=0.2) setRecStatus('partial');
-        else                    setRecStatus('fail_unclear');
-      },
+      // 2. 啟動錄音機回放功能 (iPad/iPhone 保護機制：如果是 iOS 則跳過，確保 AI 完全獨佔麥克風)
+      if (!isIOS) {
+          if (navigator.mediaDevices?.getUserMedia) {
+              try {
+                  recorderRef.current = await startRecording();
+              } catch(e) {
+                  console.log("MediaRecorder bypass on error", e);
+              }
+          }
+      }
 
-      // 靜默重試中：SpeechManager 內部自動重試，這裡只更新 UI 計數
-      onRetrying:(count)=>{
-        setRetrying(count);
-      },
+      setRecState('recording');
+      setAudioUrl(null);
+      setAiScore(0);
+      setAiStatus('idle');
 
-      // 重試全部失敗才呼叫：改顯示「沒聽清楚」
-      onNoResult:()=>{
-        setRetrying(0);
-        setRecStatus('fail_unclear');
-      },
-
-      onError:({code,msg})=>{
-        setRetrying(0);
-        if(code==='silence'||code==='aborted'){ setRecStatus('idle'); return; }
-        if(code==='network' && retries<MAX_RETRY){
-          setRetries(r=>r+1);
-          return; // SpeechManager 自己重試，這裡不需要做額外動作
-        }
-        setErrMsg(msg||'請再試一次。');
-        setRecStatus(code==='permission'||code==='no-mic' ? 'error' : 'fail_unclear');
-      },
-
-      onEnd:()=>{
-        setRetrying(0);
-        setRecStatus(p=>p==='recording'?'idle':p);
-      },
-    });
-  },[listened,recStatus,cur,retries]);
-
-  const markDone = ()=>{
-    if(!listened){ showHint('小提示：要先點「聽聽看」喔！'); return; }
-    if(!isDone){
-      setCompleted(p=>({...p,[grade]:[...p[grade],idx]}));
-      setStarAnim(true);
-      setTimeout(()=>setStarAnim(false),1600);
+    } catch(e) {
+      setRecState('idle');
+      showHint('請允許麥克風權限後再試！');
+      if(recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch(err){}
+      }
     }
   };
 
-  /* 逐字比對顯示 */
-  const WordComp = ()=> comparison.length ? (
-    <div className="slide-up" style={{marginTop:12,padding:'12px 14px',background:'#fff',borderRadius:18,border:'2px solid #f1f5f9',textAlign:'center'}}>
-      <div style={{fontSize:11,fontWeight:800,color:'#9ca3af',letterSpacing:'2px',marginBottom:8}}>逐字對照</div>
-      <div style={{fontSize:17,display:'flex',flexWrap:'wrap',justifyContent:'center',gap:'4px 6px',lineHeight:1.9}}>
-        {comparison.map((w,i)=>(
-          <span key={i} className={w.isStop?'word-skip':w.hit?'word-hit':'word-miss'}>{w.word}</span>
-        ))}
-      </div>
-      <div style={{display:'flex',justifyContent:'center',gap:16,marginTop:10,fontSize:11,color:'#9ca3af'}}>
-        <span><span className="word-hit">綠</span>=說到了</span>
-        <span><span className="word-miss">紅</span>=需再練</span>
-        <span><span className="word-skip">灰</span>=可跳過</span>
-      </div>
-    </div>
-  ) : null;
-
-  /* 錄音按鈕區 */
-  const RecArea = ()=>{
-    const base = { width:'100%', borderRadius:18, padding:'12px 16px', fontWeight:900, fontSize:17, fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:10, border:'4px solid', cursor:'pointer' };
-
-    if(recStatus==='recording') return (
-      <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        <button onClick={()=>doRecord()} style={{...base,background:'#fef2f2',borderColor:'#f87171',color:'#dc2626'}}>
-          <div className="items-end" style={{display:'flex',gap:3,height:24}}>
-            {[0,1,2,3].map(i=>(
-              <div key={i} className="wave-bar" style={{width:5,height:16,background:'#ef4444',borderRadius:3,animationDelay:`${i*.12}s`}}/>
-            ))}
-          </div>
-          {retrying > 0 ? `再聽一次… (第 ${retrying+1} 次)` : '用心聽你說… (點我停止)'}
-        </button>
-      </div>
-    );
-
-    if(recStatus==='success') return (
-      <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{background:'#10b981',borderRadius:18,padding:'12px 16px',color:'#fff',fontWeight:900,fontSize:17,textAlign:'center'}}>
-          <div>⭐ 太棒了！全部說對！</div>
-                    {audioUrl && (
-            <audio controls src={audioUrl}
-              style={{width:'100%',height:32,marginTop:6,borderRadius:8,opacity:0.85}}/>
-          )}
-          <button onClick={()=>setRecStatus('idle')} style={{marginTop:8,fontSize:12,background:'rgba(255,255,255,.2)',border:'none',color:'#fff',borderRadius:999,padding:'4px 16px',cursor:'pointer',fontFamily:'inherit'}}>再說一次</button>
-        </div>
-        <WordComp/>
-      </div>
-    );
-
-    if(recStatus==='partial') return (
-      <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{background:'#0ea5e9',borderRadius:18,padding:'12px 16px',color:'#fff',fontWeight:900,fontSize:17,textAlign:'center'}}>
-          <div>🌟 說得不錯！還可以更好！</div>
-                    {audioUrl && (
-            <audio controls src={audioUrl}
-              style={{width:'100%',height:32,marginTop:6,borderRadius:8,opacity:0.85}}/>
-          )}
-          <button onClick={()=>setRecStatus('idle')} style={{marginTop:8,fontSize:12,background:'rgba(255,255,255,.2)',border:'none',color:'#fff',borderRadius:999,padding:'4px 16px',cursor:'pointer',fontFamily:'inherit'}}>再說一次</button>
-        </div>
-        <WordComp/>
-      </div>
-    );
-
-    if(recStatus==='fail_lang') return (
-      <div className="slide-up" style={{...base,flexDirection:'column',gap:8,background:'#fff7ed',borderColor:'#fb923c',color:'#c2410c',padding:'14px 16px'}}>
-        <div>🚫 偵測到中文！要用英文說喔！</div>
-        <div style={{fontSize:13,fontWeight:700,color:'#ea580c'}}>跟著念：<em>「{cur.en.split('\n')[0]}」</em></div>
-        <button onClick={()=>setRecStatus('idle')} style={{fontSize:12,background:'#fed7aa',border:'none',color:'#c2410c',borderRadius:999,padding:'4px 16px',cursor:'pointer',fontFamily:'inherit',fontWeight:800}}>再試一次</button>
-      </div>
-    );
-
-    if(recStatus==='fail_unclear') return (
-      <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{...base,flexDirection:'column',gap:8,background:'#fefce8',borderColor:'#facc15',color:'#854d0e',padding:'14px 16px'}}>
-          <div>🎤 沒聽清楚！請靠近麥克風，大聲再說一次</div>
-          <div style={{fontSize:12,fontWeight:700,color:'#a16207'}}>
-            跟著念：<em>「{cur.en.split('\n')[0]}」</em>
-          </div>
-          {audioUrl && (
-            <div style={{fontSize:11,color:'#a16207',marginTop:2}}>
-              ▶ 聽聽你剛才說了什麼：
-              <audio controls src={audioUrl}
-                style={{width:'100%',height:28,marginTop:4,borderRadius:8}}/>
-            </div>
-          )}
-          <button
-            onClick={()=>{ setRecStatus('idle'); setTimeout(()=>doRecord(true),200); }}
-            style={{fontSize:13,background:'#fde047',border:'none',color:'#713f12',borderRadius:999,padding:'6px 20px',cursor:'pointer',fontFamily:'inherit',fontWeight:900}}>
-            🎤 馬上再試一次
-          </button>
-        </div>
-        <WordComp/>
-      </div>
-    );
-
-    if(recStatus==='error') return (
-      <div className="slide-up" style={{...base,flexDirection:'column',gap:8,background:'#fef2f2',borderColor:'#fca5a5',color:'#dc2626',padding:'14px 16px'}}>
-        <div>⚠️ {errMsg}</div>
-        <button onClick={()=>setRecStatus('idle')} style={{fontSize:12,background:'#fee2e2',border:'none',color:'#dc2626',borderRadius:999,padding:'4px 16px',cursor:'pointer',fontFamily:'inherit',fontWeight:800}}>關閉</button>
-      </div>
-    );
-
-    if(recStatus==='no_support') return (
-      <div style={{...base,background:'#f9fafb',borderColor:'#e5e7eb',color:'#9ca3af',justifyContent:'center'}}>
-        😅 這個裝置不支援錄音功能
-      </div>
-    );
-
-    // idle
-    return (
-      <button onClick={()=>doRecord()} style={{...base,background:'#fff',borderColor:'#34d399',color:'#059669'}}>
-        🎤 換你說說看
-      </button>
-    );
-  };
-
-  /* 語速按鈕 */
-  const SpeedBtn = ({rv,emoji,label})=>(
-    <button onClick={()=>setRate(rv)} style={{
-      display:'flex',flexDirection:'column',alignItems:'center',gap:2,
-      padding:'8px 12px',borderRadius:14,border:'none',cursor:'pointer',fontFamily:'inherit',
-      background: rate===rv ? ACL : 'transparent',
-      color:      rate===rv ? ACD : '#9ca3af',
-      transform:  rate===rv ? 'scale(1.1)' : 'scale(1)',
-      transition: 'all .15s',
-    }}>
-      <span style={{fontSize:28}}>{emoji}</span>
-      <span style={{fontSize:11,fontWeight:800}}>{label}</span>
-    </button>
-  );
-
-  /* 年級按鈕工廠 */
-  const GradeBtn = ({k, colorActive, colorBg, colorBorder, colorText})=>(
-    <button key={k} className="grade-btn"
-      onClick={()=>{ setGrade(k); setIdx(0); }}
+  /* 年級按鈕 */
+  const GradeBtn = ({ k, ac, acd }) => (
+    <button onClick={() => { setGrade(k); setIdx(0); }}
       style={{
         padding:'5px 13px', borderRadius:999, fontWeight:900, fontSize:13,
-        border:'none', borderBottom:`4px solid ${grade===k ? colorBorder : '#e2e8f0'}`,
-        background: grade===k ? colorActive : '#fff',
-        color:      grade===k ? '#fff' : colorText,
+        border:'none', borderBottom:`4px solid ${grade===k ? acd : '#e2e8f0'}`,
+        background: grade===k ? ac : '#fff',
+        color:      grade===k ? '#fff' : acd,
         transform:  grade===k ? 'scale(1.05)' : 'scale(1)',
-        transition: 'all .15s',
-        cursor:'pointer', fontFamily:'inherit',
+        transition:'all .15s', cursor:'pointer',
       }}>
       {ALL_DATA[k].title}
     </button>
   );
 
+  /* 練習次數顯示 */
+  const PracticeStars = () => {
+    const stars = Math.min(practiced, 5);
+    return (
+      <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'center',marginTop:4}}>
+        <span style={{fontSize:12,color:'#94a3b8',fontWeight:800}}>熟練度：</span>
+        {[1,2,3,4,5].map(i => (
+          <span key={i} style={{fontSize:18,opacity: i<=stars ? 1 : 0.2,
+            filter: i<=stars ? 'none' : 'grayscale(1)'}}>⭐</span>
+        ))}
+        {practiced > 5 && <span style={{fontSize:12,color:AC,fontWeight:900}}>+{practiced-5}</span>}
+      </div>
+    );
+  };
+
+  /* 錄音按鈕與結果區 */
+  const RecArea = () => {
+    if(recState === 'recording') return (
+      <button onClick={handleRecord}
+        style={{width:'100%',background:'#fef2f2',border:'4px solid #f87171',
+          borderRadius:18,padding:'14px 16px',fontWeight:900,fontSize:17,
+          color:'#dc2626',display:'flex',alignItems:'center',justifyContent:'center',gap:12,cursor:'pointer'}}>
+        <div style={{display:'flex',gap:3,alignItems:'flex-end',height:24}}>
+          {[0,1,2,3].map(i=>(
+            <div key={i} className="wave-bar"
+              style={{width:5,height:16,background:'#ef4444',borderRadius:3,animationDelay:`${i*.12}s`}}/>
+          ))}
+        </div>
+        錄音中… 點我停止
+      </button>
+    );
+
+    if(recState === 'processing') return (
+      <div style={{width:'100%',background:'#f8fafc',border:'4px solid #cbd5e1',
+         borderRadius:18,padding:'14px 16px',fontWeight:900,fontSize:17,
+         color:'#64748b',display:'flex',alignItems:'center',justifyContent:'center',gap:12}}>
+        ⏳ 正在用 AI 分析你的發音...
+      </div>
+    );
+
+    if(recState === 'done' && (audioUrl || isIOS)) return (
+      <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:10}}>
+        
+        {/* AI 評分結果面板 */}
+        {isAiSupported && (
+          <div style={{
+            background: aiStatus === 'success' ? '#d1fae5' : (aiStatus === 'fail_language' ? '#ffedd5' : '#fef2f2'),
+            border: `3px solid ${aiStatus === 'success' ? '#10b981' : (aiStatus === 'fail_language' ? '#f59e0b' : '#f87171')}`,
+            borderRadius: 18, padding: '12px 14px', textAlign: 'center'
+          }}>
+             {aiStatus === 'success' && <div style={{color:'#059669', fontWeight:900, fontSize:18}}>⭐ 太棒了！AI 評分: {aiScore} 分</div>}
+             {aiStatus === 'fail_language' && <div style={{color:'#b45309', fontWeight:900, fontSize:16}}>❌ 哎呀！AI 偵測到中文，請用英文喔！</div>}
+             {aiStatus === 'fail_unclear' && <div style={{color:'#dc2626', fontWeight:900, fontSize:16}}>🤔 AI 聽不清楚... 評分: {aiScore} 分，請大聲再試一次！</div>}
+          </div>
+        )}
+
+        {/* 並排比較區 (iPad 自動切換為專心聽老師模式) */}
+        <div style={{background:'#f8fafc',borderRadius:18,padding:14,border:'2px solid #f1f5f9'}}>
+          <div style={{fontSize:12,fontWeight:800,color:'#94a3b8',textAlign:'center',marginBottom:10,letterSpacing:1}}>
+            {isIOS ? '多聽老師唸幾次，發音會越來越標準喔！' : '比一比，聽聽差在哪裡'}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns: (!isIOS && audioUrl) ? '1fr 1fr' : '1fr',gap:10}}>
+            {/* 老師聲音 */}
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:11,fontWeight:800,color:ACD,marginBottom:6,
+                background:ACL,padding:'3px 8px',borderRadius:999,display:'inline-block'}}>
+                {isIOS ? '🔊 老師的標準發音' : '🔊 老師'}
+              </div>
+              <button onClick={()=>speak(cur.en)}
+                style={{width:'100%',background:AC,color:'#fff',border:'none',
+                  borderRadius:12,padding:'10px 8px',fontWeight:900,fontSize:14,cursor:'pointer'}}>
+                播放
+              </button>
+            </div>
+            {/* 學生聲音 (iPad 模式下隱藏) */}
+            {!isIOS && audioUrl && (
+              <div style={{textAlign:'center'}}>
+                <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
+                  background:'#d1fae5',padding:'3px 8px',borderRadius:999,display:'inline-block'}}>
+                  🎤 我說的
+                </div>
+                <audio src={audioUrl} controls playsInline
+                  style={{width:'100%',height:36,borderRadius:12}}/>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* 再說一次 */}
+        <button onClick={()=>{ setRecState('idle'); setAudioUrl(null); }}
+          style={{width:'100%',background:'#fff',border:'3px solid #34d399',
+            borderRadius:18,padding:'11px',fontWeight:900,fontSize:16,
+            color:'#059669',cursor:'pointer'}}>
+          🎤 再挑戰一次
+        </button>
+      </div>
+    );
+
+    // idle
+    return (
+      <button onClick={handleRecord}
+        style={{width:'100%',background:'#fff',border:'4px solid #34d399',
+          borderRadius:18,padding:'14px 16px',fontWeight:900,fontSize:17,
+          color:'#059669',display:'flex',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer'}}>
+        🎤 換你說說看 (會評分喔)
+      </button>
+    );
+  };
+
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
 
-      {/* 過關動畫 */}
+      {/* 星星動畫 */}
       {starAnim && (
         <div className="star-overlay">
           <div style={{position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <span style={{position:'absolute',fontSize:'9rem',animation:'ping 1s ease-out forwards',opacity:.3}}>⭐</span>
             <span className="star-pop" style={{fontSize:'7rem',position:'relative'}}>⭐</span>
           </div>
-          <div className="bob" style={{marginTop:24,fontSize:36,fontWeight:900,color:ACD}}>太棒了！過關！</div>
+          <div className="bob" style={{marginTop:20,fontSize:32,fontWeight:900,color:ACD}}>
+            過關！太棒了！
+          </div>
         </div>
       )}
 
       {/* 提示浮動 */}
-      {hint && <div className="hint-toast">🔊 {hint}</div>}
+      {hint && (
+        <div className="hint-toast" style={{position:'fixed',top:18,left:'50%',transform:'translateX(-50%)',zIndex:60}}>
+          {hint}
+        </div>
+      )}
 
       {/* ── Header ── */}
       <header style={{
-        background:'rgba(255,255,255,.87)',
-        backdropFilter:'blur(14px)',
+        background:'rgba(255,255,255,.87)',backdropFilter:'blur(14px)',
         position:'sticky',top:0,zIndex:20,
         borderBottom:`3px solid ${ACL}`,
         borderRadius:'0 0 20px 20px',
         boxShadow:'0 2px 12px rgba(0,0,0,.06)',
       }}>
-        <div style={{maxWidth:500,margin:'0 auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{maxWidth:500,margin:'0 auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:10}}>
 
           {/* 標題列 */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
             <div style={{fontWeight:900,fontSize:14,color:ACD}}>🏫 景美國小｜英語每週一句</div>
             <button onClick={()=>setSidebar(true)} style={{
-              display:'flex',alignItems:'center',gap:6,
-              padding:'6px 14px',borderRadius:999,fontWeight:900,fontSize:13,
-              background:'#fef9c3',border:'2px solid #fcd34d',color:'#92400e',
-              cursor:'pointer',fontFamily:'inherit',transition:'all .15s',
+              padding:'5px 12px',borderRadius:999,fontWeight:900,fontSize:12,
+              background:'#fef9c3',border:'2px solid #fcd34d',color:'#92400e',cursor:'pointer',
             }}>🏆 收集本</button>
           </div>
 
           {/* 低年級 */}
           <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:6}}>
-            {LOW.map(k=><GradeBtn key={k} k={k} colorActive="#0ea5e9" colorBorder="#0284c7" colorText="#0284c7"/>)}
+            {LOW.map(k=><GradeBtn key={k} k={k} ac="#0ea5e9" acd="#0284c7"/>)}
           </div>
           {/* 高年級 */}
           <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:6}}>
-            {HIGH.map(k=><GradeBtn key={k} k={k} colorActive="#10b981" colorBorder="#059669" colorText="#059669"/>)}
+            {HIGH.map(k=><GradeBtn key={k} k={k} ac="#10b981" acd="#059669"/>)}
           </div>
 
           {/* 進度條 */}
           <div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:900,color:ACD,marginBottom:5}}>
-              <span>尋寶進度</span>
-              <span>{doneList.length} / {sentences.length} 顆星</span>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:900,color:ACD,marginBottom:4}}>
+              <span>練習進度</span>
+              <span>{doneSet.length} / {sentences.length} 題</span>
             </div>
             <div className="progress-track">
               <div className="progress-fill" style={{width:`${Math.max(4,progress)}%`}}/>
@@ -837,109 +758,178 @@ function App(){
       </header>
 
       {/* ── Main ── */}
-      <main style={{flex:1,display:'flex',justifyContent:'center',padding:'16px'}}>
+      <main style={{flex:1,display:'flex',justifyContent:'center',padding:16}}>
         <div className="card" style={{width:'100%',maxWidth:500,border:`4px solid ${ACL}`}}>
 
-          {/* 週次標題 */}
-          <div style={{background:AC,color:'#fff',textAlign:'center',padding:'12px',fontWeight:900,fontSize:20,letterSpacing:4}}>
+          {/* 週次 */}
+          <div style={{background:AC,color:'#fff',textAlign:'center',padding:'11px',
+            fontWeight:900,fontSize:20,letterSpacing:4}}>
             第 {cur.week} 週
           </div>
 
-          <div style={{padding:'20px 18px',display:'flex',flexDirection:'column',alignItems:'center',gap:20}}>
+          <div style={{padding:'20px 18px',display:'flex',flexDirection:'column',alignItems:'center',gap:18}}>
 
             {/* Icon */}
-            <div className="bob" style={{fontSize:88,cursor:'pointer',filter:'drop-shadow(0 4px 8px rgba(0,0,0,.1))'}}
+            <div className="bob" style={{fontSize:84,cursor:'pointer',
+              filter:'drop-shadow(0 4px 8px rgba(0,0,0,.1))'}}
               onClick={()=>speak(cur.en)}>
               {cur.icon}
             </div>
 
-            {/* 英文句子 */}
-            <div className="en-sentence whitespace-pre-line" style={{fontWeight:900,color:'#1e293b',textAlign:'center',lineHeight:1.35}}>
+            {/* 英文 */}
+            <div className="en-sentence" style={{fontWeight:900,color:'#1e293b',
+              textAlign:'center',lineHeight:1.35,whiteSpace:'pre-line'}}>
               {cur.en}
             </div>
 
             {/* 中文 */}
-            <div className="whitespace-pre-line" style={{fontSize:20,fontWeight:900,padding:'10px 24px',borderRadius:999,background:ACL,color:ACD,textAlign:'center',lineHeight:1.5}}>
+            <div style={{fontSize:19,fontWeight:900,padding:'10px 22px',
+              borderRadius:999,background:ACL,color:ACD,
+              textAlign:'center',whiteSpace:'pre-line',lineHeight:1.5}}>
               {cur.zh}
             </div>
 
+            {/* 練習次數星星 */}
+            <PracticeStars />
+
             {/* 控制面板 */}
-            <div style={{width:'100%',background:'#f8fafc',borderRadius:22,padding:16,border:'2px solid #f1f5f9',display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{width:'100%',background:'#f8fafc',borderRadius:22,
+              padding:14,border:'2px solid #f1f5f9',display:'flex',flexDirection:'column',gap:10}}>
+
+              {/* 步驟提示 */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,
+                fontSize:12,fontWeight:800,color:'#94a3b8'}}>
+                <span style={{color: '#374151'}}>①</span> 先聽老師說
+                <span style={{color:'#d1d5db',margin:'0 4px'}}>→</span>
+                <span style={{color: '#374151'}}>②</span> 錄音拿高分
+                <span style={{color:'#d1d5db',margin:'0 4px'}}>→</span>
+                <span style={{color: '#374151'}}>③</span> 比較聲音
+              </div>
 
               {/* TTS */}
               <button onClick={()=>speak(cur.en)} className="btn-3d"
-                style={{width:'100%','--sh':ACB,background:'#3b82f6',boxShadow:`0 6px 0 ${ACB}`,color:'#fff',borderRadius:18,padding:'15px',border:'none',fontWeight:900,fontSize:20,fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:12,cursor:'pointer'}}>
+                style={{width:'100%','--sh':ACB,background:'#3b82f6',
+                  boxShadow:`0 6px 0 ${ACB}`,color:'#fff',borderRadius:18,
+                  padding:'14px',border:'none',fontWeight:900,fontSize:19,cursor:'pointer',
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>
                 🔊 點我聽聽看
               </button>
 
               {/* 語速 */}
-              <div style={{display:'flex',justifyContent:'center',gap:8,background:'#fff',padding:8,borderRadius:16,border:'2px solid #f1f5f9'}}>
-                <SpeedBtn rv={0.6}  emoji="🐢" label="烏龜慢慢"/>
-                <SpeedBtn rv={0.85} emoji="🧒" label="正常速度"/>
-                <SpeedBtn rv={1.1}  emoji="🐇" label="兔子快快"/>
+              <div style={{display:'flex',justifyContent:'center',gap:8,
+                background:'#fff',padding:8,borderRadius:16,border:'2px solid #f1f5f9'}}>
+                {[
+                  {rv:0.6,  emoji:'🐢', label:'慢'},
+                  {rv:0.85, emoji:'🧒', label:'正常'},
+                  {rv:1.1,  emoji:'🐇', label:'快'},
+                ].map(({rv,emoji,label})=>(
+                  <button key={rv} onClick={()=>setRate(rv)}
+                    style={{display:'flex',flexDirection:'column',alignItems:'center',
+                      padding:'6px 14px',borderRadius:12,border:'none',cursor:'pointer',
+                      background: rate===rv ? ACL : 'transparent',
+                      color:      rate===rv ? ACD : '#9ca3af',
+                      transform:  rate===rv ? 'scale(1.1)':'scale(1)',
+                      transition:'all .15s'}}>
+                    <span style={{fontSize:24}}>{emoji}</span>
+                    <span style={{fontSize:11,fontWeight:800}}>{label}</span>
+                  </button>
+                ))}
               </div>
 
-              {/* 錄音 */}
-              <RecArea/>
+              {/* 錄音區 */}
+              <RecArea />
             </div>
           </div>
 
           {/* 底部導覽 */}
-          <div style={{padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:ACL,borderTop:`4px solid ${AC}44`}}>
+          <div style={{padding:'12px 16px',display:'flex',alignItems:'center',
+            justifyContent:'space-between',background:ACL,
+            borderTop:`4px solid ${AC}44`}}>
 
             <button onClick={()=>setIdx(i=>Math.max(0,i-1))} disabled={idx===0}
-              style={{width:48,height:48,borderRadius:'50%',background:'#fff',border:`2px solid ${idx===0?'#e2e8f0':AC}`,color:idx===0?'#d1d5db':ACD,fontSize:20,fontWeight:900,fontFamily:'inherit',cursor:idx===0?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>
+              style={{width:48,height:48,borderRadius:'50%',background:'#fff',
+                border:`2px solid ${idx===0?'#e2e8f0':AC}`,
+                color:idx===0?'#d1d5db':ACD,fontSize:20,fontWeight:900,
+                cursor:idx===0?'default':'pointer',
+                display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>
               ←
             </button>
 
-            <button onClick={markDone} style={{
-              display:'flex',alignItems:'center',gap:8,
-              padding:'10px 20px',borderRadius:20,fontWeight:900,fontSize:17,
-              border:'none',borderBottom:`4px solid ${isDone?ACD:'#d1d5db'}`,
-              background:isDone?AC:'#fff',color:isDone?'#fff':'#6b7280',
-              cursor:'pointer',fontFamily:'inherit',transition:'all .15s',
-            }}>
-              {isDone?'⭐ 恭喜過關！':'☆ 我會唸了！領星星'}
-            </button>
+            {/* 中間顯示週次 */}
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:14,fontWeight:900,color:ACD}}>
+                {idx+1} / {sentences.length}
+              </div>
+            </div>
 
-            <button onClick={()=>setIdx(i=>Math.min(sentences.length-1,i+1))} disabled={idx===sentences.length-1}
-              style={{width:48,height:48,borderRadius:'50%',background:'#fff',border:`2px solid ${idx===sentences.length-1?'#e2e8f0':AC}`,color:idx===sentences.length-1?'#d1d5db':ACD,fontSize:20,fontWeight:900,fontFamily:'inherit',cursor:idx===sentences.length-1?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>
+            <button onClick={()=>setIdx(i=>Math.min(sentences.length-1,i+1))}
+              disabled={idx===sentences.length-1}
+              style={{width:48,height:48,borderRadius:'50%',background:'#fff',
+                border:`2px solid ${idx===sentences.length-1?'#e2e8f0':AC}`,
+                color:idx===sentences.length-1?'#d1d5db':ACD,fontSize:20,fontWeight:900,
+                cursor:idx===sentences.length-1?'default':'pointer',
+                display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>
               →
             </button>
           </div>
         </div>
       </main>
 
-      {/* ── Footer ── */}
-      <footer style={{textAlign:'center',padding:'12px 0 20px',fontSize:11,fontWeight:800,color:'rgba(2,132,199,.4)'}}>
+      {/* Footer */}
+      <footer style={{textAlign:'center',padding:'10px 0 18px',
+        fontSize:11,fontWeight:800,color:'rgba(2,132,199,.4)'}}>
         AI協作設計：鍾子韶老師 / 王佐民老師 / 梁中梅老師 / 何進益老師
       </footer>
 
-      {/* 覆蓋層 */}
+      {/* 側邊欄遮罩 */}
       {sidebar && <div className="overlay" onClick={()=>setSidebar(false)}/>}
 
       {/* 收集本側邊欄 */}
       <div className={`sidebar ${sidebar?'open':'close'}`}>
-        <div style={{padding:'20px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'#fbbf24',borderRadius:'24px 0 0 0',borderBottom:'4px solid #f59e0b'}}>
-          <span style={{fontWeight:900,fontSize:17,color:'#78350f'}}>🏆 我的星星收集本</span>
-          <button onClick={()=>setSidebar(false)} style={{width:32,height:32,borderRadius:'50%',background:'#fcd34d',border:'2px solid #f59e0b',cursor:'pointer',fontWeight:900,fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'inherit',color:'#78350f'}}>✕</button>
+        <div style={{padding:'18px 20px',display:'flex',alignItems:'center',
+          justifyContent:'space-between',background:'#fbbf24',
+          borderRadius:'24px 0 0 0',borderBottom:'4px solid #f59e0b'}}>
+          <span style={{fontWeight:900,fontSize:17,color:'#78350f'}}>🏆 練習收集本</span>
+          <button onClick={()=>setSidebar(false)}
+            style={{width:32,height:32,borderRadius:'50%',background:'#fcd34d',
+              border:'2px solid #f59e0b',cursor:'pointer',fontWeight:900,
+              fontSize:16,color:'#78350f'}}>✕</button>
         </div>
 
-        <div style={{flex:1,overflowY:'auto',padding:16,display:'flex',flexDirection:'column',gap:12,background:'#fffbeb'}}>
+        <div style={{flex:1,overflowY:'auto',padding:14,
+          display:'flex',flexDirection:'column',gap:10,background:'#fffbeb'}}>
           {Object.entries(ALL_DATA).map(([k,d])=>{
-            const cnt=completed[k].length, total=d.sentences.length, done=cnt===total, hi=HIGH.includes(k);
-            const bar = done?'#fbbf24':hi?'#10b981':'#0ea5e9';
+            const gradeCounts = Object.keys(counts).filter(ck=>ck.startsWith(k+'-'));
+            const practiced1  = gradeCounts.filter(ck=>(counts[ck]||0)>=1).length;
+            const practiced3  = gradeCounts.filter(ck=>(counts[ck]||0)>=3).length;
+            const total = d.sentences.length;
+            const hi = HIGH.includes(k);
+            const bar = practiced3===total?'#fbbf24':hi?'#10b981':'#0ea5e9';
             return (
               <div key={k} onClick={()=>{setGrade(k);setIdx(0);setSidebar(false);}}
-                style={{background:'#fff',borderRadius:18,padding:14,border:`4px solid ${done?'#fbbf24':'#e2e8f0'}`,cursor:'pointer',transition:'all .15s'}}>
+                style={{background:'#fff',borderRadius:18,padding:14,
+                  border:`4px solid ${practiced3===total?'#fbbf24':'#e2e8f0'}`,cursor:'pointer'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                   <span style={{fontWeight:900,color:'#1e293b'}}>{d.title}</span>
-                  <span style={{fontSize:12,fontWeight:800,padding:'2px 10px',borderRadius:999,background:done?'#fef3c7':'#f1f5f9',color:done?'#92400e':'#64748b'}}>{cnt}/{total}</span>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2}}>
+                    <span style={{fontSize:11,fontWeight:800,color:'#64748b'}}>
+                      練過：{practiced1}/{total}
+                    </span>
+                    <span style={{fontSize:11,fontWeight:800,color:ACD}}>
+                      熟練：{practiced3}/{total}
+                    </span>
+                  </div>
                 </div>
-                <div style={{height:10,background:'#f1f5f9',borderRadius:999,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${cnt/total*100}%`,background:bar,borderRadius:999,transition:'width 1s'}}/>
+                <div style={{height:8,background:'#f1f5f9',borderRadius:999,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${practiced3/total*100}%`,
+                    background:bar,borderRadius:999,transition:'width 1s'}}/>
                 </div>
-                {done && <div style={{marginTop:8,background:'#fef3c7',color:'#92400e',fontSize:12,fontWeight:900,textAlign:'center',padding:'6px',borderRadius:10}}>⭐ 恭喜全部過關！</div>}
+                {practiced3===total && (
+                  <div style={{marginTop:8,background:'#fef3c7',color:'#92400e',
+                    fontSize:12,fontWeight:900,textAlign:'center',padding:6,borderRadius:10}}>
+                    ⭐ 全部熟練！
+                  </div>
+                )}
               </div>
             );
           })}
