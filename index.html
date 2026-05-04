@@ -435,10 +435,10 @@ function App() {
   const ACL = isHigh ? '#d1fae5' : '#e0f2fe';
   const ACB = isHigh ? '#059669' : '#1d4ed8';
 
-  // ★ 1. 切換題目時，徹底銷毀所有麥克風實體，避免 iOS 背景佔用
+  // ★ 切換題目時，安全釋放，絕不呼叫 abort，防止 iOS 當機
   useEffect(() => {
     if(recorderRef.current) { try{recorderRef.current.abort();}catch(e){} recorderRef.current = null; }
-    if(recognitionRef.current) { try{recognitionRef.current.abort();}catch(e){} recognitionRef.current = null; }
+    if(recognitionRef.current) { try{recognitionRef.current.stop();}catch(e){} recognitionRef.current = null; }
     clearTimeout(timerRef.current);
     
     setRecState('idle');
@@ -448,10 +448,10 @@ function App() {
     setAudioUrl(null);
   }, [idx, grade]);
 
-  // ★ 2. 離開頁面時，再次確保安全釋放
+  // ★ 離開頁面時的安全釋放
   useEffect(() => () => {
     if(recorderRef.current) { try{recorderRef.current.abort();}catch(e){} }
-    if(recognitionRef.current) { try{recognitionRef.current.abort();}catch(e){} }
+    if(recognitionRef.current) { try{recognitionRef.current.stop();}catch(e){} }
     clearTimeout(timerRef.current);
   }, []);
 
@@ -473,9 +473,7 @@ function App() {
         try {
           const url = await recorderRef.current.stop();
           setAudioUrl(url);
-        } catch (e) {
-          console.log("iOS Stop Record Error", e);
-        }
+        } catch (e) {}
         recorderRef.current = null;
       }
       setIosRecState('idle');
@@ -490,9 +488,9 @@ function App() {
       setAudioUrl(null);
       setIosRecState('recording');
       
-      // 以防萬一，先關掉所有 AI 的監聽機制
+      // 先關掉 AI 監聽
       if(recognitionRef.current) {
-          try { recognitionRef.current.abort(); } catch(err){}
+          try { recognitionRef.current.stop(); } catch(err){}
           recognitionRef.current = null;
       }
       recorderRef.current = await startRecording();
@@ -502,7 +500,7 @@ function App() {
     }
   };
 
-  /* 運算分數 (抽出為獨立函數避免舊的 Closure 變數錯誤) */
+  /* 運算分數 */
   const evaluateScore = () => {
        let finalScore = 0;
        let currentAiStatus = 'idle';
@@ -551,11 +549,15 @@ function App() {
 
   /* 統一停止錄音的函數 */
   const handleStopRecording = async () => {
+      // 避免重複執行
+      if (recStateRef.current !== 'recording') return;
       setRecState('processing');
       clearTimeout(timerRef.current);
       
+      // ★ 溫柔的 stop，絕對不呼叫 abort
       if(recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch(e){}
+        recognitionRef.current = null; // 丟棄，避免再次被使用
       }
 
       let url = null;
@@ -565,10 +567,10 @@ function App() {
       }
       setAudioUrl(url);
 
-      // 給予 iOS 一點緩衝時間取得最後的 transcript 結果
+      // 給予一點緩衝時間取得最後 transcript
       setTimeout(() => {
           evaluateScore();
-      }, 800);
+      }, 500);
   };
 
   /* 統一開始錄音的函數 */
@@ -579,9 +581,9 @@ function App() {
       }
       
       try {
-        // ★ 核心修復：強制銷毀任何潛在殘留的舊麥克風物件
+        // ★ 安全清理舊的執行個體
         if(recognitionRef.current) {
-            try { recognitionRef.current.abort(); } catch(err){}
+            try { recognitionRef.current.stop(); } catch(err){}
             recognitionRef.current = null;
         }
         if(recorderRef.current) {
@@ -596,7 +598,7 @@ function App() {
            const recognition = new SR();
            recognition.lang = 'en-US';
            recognition.interimResults = true; 
-           recognition.continuous = false;
+           recognition.continuous = false; // ★ 設為 false，讓 iOS 會在學生講完自動觸發 onend
            
            recognition.onresult = (e) => {
                let finalStr = "";
@@ -605,11 +607,22 @@ function App() {
                }
                transcriptRef.current = finalStr.trim();
            };
+
+           // ★ 自動收卷機制：當 iOS 偵測到學生講完話時，會自動進到這一步，不用傻傻等 6 秒！
+           recognition.onend = () => {
+               if (recStateRef.current === 'recording') {
+                   handleStopRecording();
+               }
+           };
+
+           recognition.onerror = (e) => {
+               console.log("SR Error:", e.error);
+           };
+
            recognitionRef.current = recognition;
            try { recognition.start(); } catch(err){}
         }
 
-        // iPad 模式下完全不啟動 MediaRecorder，把硬體 100% 留給 AI 辨識
         if (!isIOS) {
             if (navigator.mediaDevices?.getUserMedia) {
                 try { recorderRef.current = await startRecording(); } catch(e) {}
@@ -621,7 +634,7 @@ function App() {
         setAiScore(0);
         setAiStatus('idle');
 
-        // ★ 6 秒防卡死強制收卷機制
+        // ★ 防卡死備用方案：最多等 6 秒強制收卷
         clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
             if (recStateRef.current === 'recording') {
@@ -633,7 +646,7 @@ function App() {
         setRecState('idle');
         showHint('請允許麥克風權限後再試！');
         if(recognitionRef.current) {
-          try { recognitionRef.current.abort(); } catch(err){}
+          try { recognitionRef.current.stop(); } catch(err){}
         }
       }
   };
@@ -702,7 +715,6 @@ function App() {
       </div>
     );
 
-    // ★ 當評分完畢時 (done)
     if(recState === 'done') return (
       <div className="slide-up" style={{display:'flex',flexDirection:'column',gap:10}}>
         
@@ -719,7 +731,7 @@ function App() {
           </div>
         )}
 
-        {/* 並排比較區：如果是 Apple 設備 (isIOS)，這裡會提供額外的「接力錄音按鈕」 */}
+        {/* 並排比較區 */}
         <div style={{background:'#f8fafc',borderRadius:18,padding:14,border:'2px solid #f1f5f9'}}>
           <div style={{fontSize:12,fontWeight:800,color:'#94a3b8',textAlign:'center',marginBottom:10,letterSpacing:1}}>
             {isIOS ? '多聽老師唸幾次，發音會越來越標準喔！' : '比一比，聽聽差在哪裡'}
@@ -739,7 +751,7 @@ function App() {
               </button>
             </div>
 
-            {/* 學生聲音 (依裝置提供不同介面) */}
+            {/* 學生聲音 */}
             {(!isIOS && audioUrl) && (
               <div style={{textAlign:'center'}}>
                 <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
@@ -750,7 +762,7 @@ function App() {
               </div>
             )}
             
-            {/* 【Apple 系統】：提供額外的「純錄音接力按鈕」 */}
+            {/* 【Apple 系統】專屬的純錄音按鈕 */}
             {isIOS && (
               <div style={{textAlign:'center'}}>
                 <div style={{fontSize:11,fontWeight:800,color:'#059669',marginBottom:6,
@@ -758,17 +770,14 @@ function App() {
                   🌟 我的專屬錄音
                 </div>
                 <div style={{display:'flex', flexDirection:'column', gap:6}}>
-                  {/* 若已經手動錄好了，就顯示播放器 */}
                   {audioUrl && <audio src={audioUrl} controls playsInline style={{width:'100%',height:36,borderRadius:12}}/>}
                   
-                  {/* 未錄音，或已錄完但沒在錄的狀態 */}
                   {iosRecState === 'idle' && (
                     <button onClick={handleIosOnlyRecord} 
                       style={{width:'100%', background:'#fff', color:'#059669', border:'2px solid #34d399', borderRadius:10, padding:'6px', fontWeight:900, fontSize:13, cursor:'pointer'}}>
                       {audioUrl ? '🔄 重錄一次' : '🎤 錄下我的聲音'}
                     </button>
                   )}
-                  {/* 正在錄音中 */}
                   {iosRecState === 'recording' && (
                     <button onClick={handleIosOnlyRecord} className="pulse"
                       style={{width:'100%', background:'#fef2f2', color:'#dc2626', border:'2px solid #f87171', borderRadius:10, padding:'6px', fontWeight:900, fontSize:13, cursor:'pointer'}}>
@@ -781,9 +790,9 @@ function App() {
           </div>
         </div>
         
-        {/* 再挑戰一次 (重置且徹底銷毀舊麥克風連線) */}
+        {/* 再挑戰一次 */}
         <button onClick={()=>{ 
-            if(recognitionRef.current) { try{recognitionRef.current.abort();}catch(e){} recognitionRef.current = null; }
+            if(recognitionRef.current) { try{recognitionRef.current.stop();}catch(e){} recognitionRef.current = null; }
             if(recorderRef.current) { try{recorderRef.current.abort();}catch(e){} recorderRef.current = null; }
             clearTimeout(timerRef.current);
 
